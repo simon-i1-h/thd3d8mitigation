@@ -178,9 +178,7 @@ void cs_D3D8HandleLazyInit(HMODULE* ret)
 	err = GetLastError();
 	free(sysdllpath);
 	if (*ret == NULL)
-	{
 		ThfError(err, "%s: LoadLibraryA failed.", __FUNCTION__);
-	}
 }
 
 HMODULE* cs_D3D8Handle(void)
@@ -198,9 +196,7 @@ void cs_VanillaDirect3DCreate8LazyInit(Direct3DCreate8_t* ret)
 		return;
 
 	if ((*ret = (Direct3DCreate8_t)GetProcAddress(*cs_D3D8Handle(), "Direct3DCreate8")) == NULL)
-	{
 		ThfError(GetLastError(), "%s: LoadFuncFromD3D8 failed.", __FUNCTION__);
-	}
 }
 
 Direct3DCreate8_t* cs_VanillaDirect3DCreate8(void)
@@ -259,8 +255,6 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
-	BOOL ret = TRUE;
-
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
@@ -276,5 +270,5 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 		break;
 	}
 
-	return ret;
+	return TRUE;
 }
