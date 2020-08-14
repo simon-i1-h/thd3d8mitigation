@@ -14,6 +14,7 @@
 // Naming convention:
 //   Thf*: thd3d8fix
 //   cs_*: Critical section
+//   g_*: Global variable
 //   *_t: Type identifier
 
 // XXX TODO error handling
