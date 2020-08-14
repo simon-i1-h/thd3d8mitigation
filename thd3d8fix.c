@@ -21,6 +21,7 @@
 // XXX TODO 東方と同様にファイルにもロギング
 // XXX TODO review
 // XXX TODO コード整形
+// XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
 
 static CRITICAL_SECTION g_CS;
 
