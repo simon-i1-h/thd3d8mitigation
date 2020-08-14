@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClCompile Include="thd3d8fix.c" />
     <ClCompile Include="util.c" />
+    <ClCompile Include="hashtable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="thd3d8fix.def" />
