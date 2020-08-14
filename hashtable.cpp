@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <unordered_map>
 
 // XXX TODO exception safety
@@ -30,5 +31,16 @@ extern "C" void hashtable_erase(struct hashtable* h, uintptr_t k)
 
 extern "C" void* hashtable_get(struct hashtable* h, uintptr_t k)
 {
-	return h->map[k];
+	void* ret;
+
+	try
+	{
+		ret = h->map.at(k);
+	}
+	catch (std::out_of_range&)
+	{
+		ret = NULL;
+	}
+
+	return ret;
 }
