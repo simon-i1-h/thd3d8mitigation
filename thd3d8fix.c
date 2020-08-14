@@ -22,6 +22,7 @@
 // XXX TODO review
 // XXX TODO コード整形
 // XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
+// XXX TODO グローバル変数相当の関数の名前を縮める
 
 static CRITICAL_SECTION g_CS;
 
@@ -43,23 +44,23 @@ struct IDirect3DDevice8ExtraDataTable** cs_IDirect3DDevice8ExtraDataTable(void)
 	return &inner;
 }
 
-struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(IDirect3D8CreateDevice_t VanillaCreateDevice)
+struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(IDirect3D8CreateDevice_t VanillaCreateDevice, IDirect3D8Release_t VanillaRelease)
 {
 	struct IDirect3D8ExtraData* ret;
 
 	if ((ret = malloc(sizeof(*ret))) == NULL) // XXX TODO error handling
 		return NULL;
-	*ret = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = VanillaCreateDevice };
+	*ret = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = VanillaCreateDevice, .VanillaRelease = VanillaRelease };
 	return ret;
 }
 
-struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(IDirect3DDevice8Present_t VanillaPresent, D3DPRESENT_PARAMETERS pp)
+struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(IDirect3DDevice8Present_t VanillaPresent, IDirect3DDevice8Release_t VanillaRelease, D3DPRESENT_PARAMETERS pp)
 {
 	struct IDirect3DDevice8ExtraData* ret;
 
 	if ((ret = malloc(sizeof(*ret))) == NULL) // XXX TODO error handling
 		return NULL;
-	*ret = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = VanillaPresent, .pp = pp };
+	*ret = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = VanillaPresent, .VanillaRelease = VanillaRelease, .pp = pp };
 	return ret;
 }
 
@@ -68,6 +69,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	D3DRASTER_STATUS stat;
 	HRESULT ret;
 
+	// me_exdataはmeに1対1で紐づく拡張データと考えられるので、少なくともmeを扱っている間はデータ競合や競合状態について考えなくてよい。
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	EnterCriticalSection(&g_CS);
@@ -103,6 +105,40 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	return ret;
 }
 
+ULONG cs_ModIDirect3DDevice8Release(IDirect3DDevice8* me)
+{
+	ULONG ret;
+	struct IDirect3DDevice8ExtraData* me_exdata;
+
+	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_IDirect3DDevice8ExtraDataTable(), me)) == NULL)
+		return 0; // XXX FIXME error handling
+
+	ret = me_exdata->VanillaRelease(me);
+
+	// XXX TODO 解放されたかどうかはほかの方法で検出したほうがいいかも。その場合、Releaseのhookは適切ではないかもしれない。
+	// https://docs.microsoft.com/en-us/previous-versions/windows/embedded/ms890669(v=msdn.10)?redirectedfrom=MSDN
+	// https://docs.microsoft.com/ja-jp/windows/win32/api/unknwn/nf-unknwn-iunknown-release
+	if (ret == 0)
+	{
+		free(me_exdata);
+		IDirect3DDevice8ExtraDataTableErase(*cs_IDirect3DDevice8ExtraDataTable(), me);
+		IDirect3DDevice8ExtraDataTableShrinkToFit(*cs_IDirect3DDevice8ExtraDataTable());
+	}
+
+	return ret;
+}
+
+ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
+{
+	ULONG ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3DDevice8Release(me);
+	LeaveCriticalSection(&g_CS);
+
+	return ret;
+}
+
 HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
@@ -119,21 +155,21 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 		IDirect3DDevice8* device = *ppReturnedDeviceInterface;
 		IDirect3DDevice8Vtbl* vtbl = device->lpVtbl;
 
-		if (!VirtualProtect(&vtbl->Present, sizeof(vtbl->Present), PAGE_READWRITE, &orig_protect))
+		// hook IDirect3DDevice8::Present and IDirect3DDevice8::Release (inherit from IUnknown::Release)
+
+		if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 		{
 			ThfError(GetLastError(), "%s: VirtualProtect failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 
-		IDirect3DDevice8ExtraDataTableInsert(*cs_IDirect3DDevice8ExtraDataTable(), *ppReturnedDeviceInterface, AllocateIDirect3DDevice8ExtraData(vtbl->Present, *pPresentationParameters));
+		IDirect3DDevice8ExtraDataTableInsert(*cs_IDirect3DDevice8ExtraDataTable(), device, AllocateIDirect3DDevice8ExtraData(vtbl->Present, vtbl->Release, *pPresentationParameters));
 		vtbl->Present = ModIDirect3DDevice8Present;
+		vtbl->Release = ModIDirect3DDevice8Release;
 
 		// best effort
-		if (!VirtualProtect(&vtbl->Present, sizeof(vtbl->Present), orig_protect, &orig_protect))
-		{
+		if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
 			ThfError(GetLastError(), "%s: VirtualProtect failed.", __FUNCTION__);
-			return E_FAIL;
-		}
 	}
 
 	return ret;
@@ -145,6 +181,40 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 
 	EnterCriticalSection(&g_CS);
 	ret = cs_ModIDirect3D8CreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+	LeaveCriticalSection(&g_CS);
+
+	return ret;
+}
+
+ULONG cs_ModIDirect3D8Release(IDirect3D8* me)
+{
+	ULONG ret;
+	struct IDirect3D8ExtraData* me_exdata;
+
+	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_IDirect3D8ExtraDataTable(), me)) == NULL)
+		return 0; // XXX FIXME error handling
+
+	ret = me_exdata->VanillaRelease(me);
+
+	// XXX TODO 解放されたかどうかはほかの方法で検出したほうがいいかも。その場合、Releaseのhookは適切ではないかもしれない。
+	// https://docs.microsoft.com/en-us/previous-versions/windows/embedded/ms890669(v=msdn.10)?redirectedfrom=MSDN
+	// https://docs.microsoft.com/ja-jp/windows/win32/api/unknwn/nf-unknwn-iunknown-release
+	if (ret == 0)
+	{
+		free(me_exdata);
+		IDirect3D8ExtraDataTableErase(*cs_IDirect3D8ExtraDataTable(), me);
+		IDirect3D8ExtraDataTableShrinkToFit(*cs_IDirect3D8ExtraDataTable());
+	}
+
+	return ret;
+}
+
+ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
+{
+	ULONG ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3D8Release(me);
 	LeaveCriticalSection(&g_CS);
 
 	return ret;
@@ -223,21 +293,21 @@ IDirect3D8* cs_ModDirect3DCreate8(UINT SDKVersion)
 		DWORD orig_protect;
 		IDirect3D8Vtbl* vtbl = ret->lpVtbl;
 
-		if (!VirtualProtect(&vtbl->CreateDevice, sizeof(vtbl->CreateDevice), PAGE_READWRITE, &orig_protect))
+		// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
+
+		if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 		{
-			ThfError(GetLastError(), "%s: VirtualProtect failed.", __FUNCTION__);
+			ThfError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
 			return NULL;
 		}
 
-		IDirect3D8ExtraDataTableInsert(*cs_IDirect3D8ExtraDataTable(), ret, AllocateIDirect3D8ExtraData(vtbl->CreateDevice));
+		IDirect3D8ExtraDataTableInsert(*cs_IDirect3D8ExtraDataTable(), ret, AllocateIDirect3D8ExtraData(vtbl->CreateDevice, vtbl->Release));
 		vtbl->CreateDevice = ModIDirect3D8CreateDevice;
+		vtbl->Release = ModIDirect3D8Release;
 
 		// best effort
-		if (!VirtualProtect(&vtbl->CreateDevice, sizeof(vtbl->CreateDevice), orig_protect, &orig_protect))
-		{
-			ThfError(GetLastError(), "%s: VirtualProtect failed.", __FUNCTION__);
-			return NULL;
-		}
+		if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
+			ThfError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
 	}
 
 	return ret;
