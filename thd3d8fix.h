@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#define THF_VERSION "0.1"
+
 // thd3d8fix.c
 
 // type of Direct3DCreate8

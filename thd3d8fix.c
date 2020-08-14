@@ -260,6 +260,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	{
 	case DLL_PROCESS_ATTACH:
 	{
+		ThfLog("Version: %s", THF_VERSION);
 		ThfLog("Attaching to the process: begin");
 		InitializeCriticalSection(&g_CS);
 		ThfLog("Attaching to the process: succeeded");
