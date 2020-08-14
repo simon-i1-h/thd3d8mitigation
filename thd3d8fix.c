@@ -20,15 +20,16 @@
 // XXX TODO fix data race and race condition
 // XXX TODO コード整形
 
-// hook COM method
+static CRITICAL_SECTION g_cs;
 
+typedef IDirect3D8* (WINAPI* Type_Direct3DCreate8)(UINT);
 typedef HRESULT(__stdcall* Type_IDirect3DDevice8_Present)(
 	IDirect3DDevice8*,
 	CONST RECT*,
 	CONST RECT*,
 	HWND,
 	CONST RGNDATA*
-	);
+);
 typedef HRESULT(__stdcall* Type_IDirect3D8_CreateDevice)(
 	IDirect3D8*,
 	UINT,
@@ -37,10 +38,41 @@ typedef HRESULT(__stdcall* Type_IDirect3D8_CreateDevice)(
 	DWORD,
 	D3DPRESENT_PARAMETERS*,
 	IDirect3DDevice8**
-	);
+);
 
-static Type_IDirect3DDevice8_Present Vanilla_IDirect3DDevice8_Present = NULL;
-static Type_IDirect3D8_CreateDevice Vanilla_IDirect3D8_CreateDevice = NULL;
+struct IDirect3D8ExtraData {
+	Type_IDirect3D8_CreateDevice VanillaCreateDevice;
+};
+
+struct IDirect3DDevice8ExtraData {
+	Type_IDirect3DDevice8_Present VanillaPresent;
+	D3DPRESENT_PARAMETERS pp;  // XXX TODO 潜在的な危険性
+};
+
+//static Type_IDirect3DDevice8_Present Vanilla_IDirect3DDevice8_Present = NULL;
+//static Type_IDirect3D8_CreateDevice Vanilla_IDirect3D8_CreateDevice = NULL;
+struct hashtable* g_IDirect3D8ExtraDataTable; /* key: uintptr_t as IDirect3D8*, value: malloc-ed struct IDirect3D8ExtraData */
+struct hashtable* g_IDirect3DDevice8ExtraDataTable; /* key: uintptr_t as IDirect3DDevice8*, value: malloc-ed struct IDirect3DDevice8ExtraData */
+
+struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(Type_IDirect3D8_CreateDevice VanillaCreateDevice)
+{
+	struct IDirect3D8ExtraData* ret;
+
+	if ((ret = malloc(sizeof(*ret))) == NULL) // XXX TODO error handling
+		return NULL;
+	*ret = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = VanillaCreateDevice };
+	return ret;
+}
+
+struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(Type_IDirect3DDevice8_Present VanillaPresent, D3DPRESENT_PARAMETERS pp)
+{
+	struct IDirect3DDevice8ExtraData* ret;
+
+	if ((ret = malloc(sizeof(*ret))) == NULL) // XXX TODO error handling
+		return NULL;
+	*ret = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = VanillaPresent, .pp = pp };
+	return ret;
+}
 
 HRESULT __stdcall Mod_IDirect3DDevice8_Present(
 	IDirect3DDevice8* me,
@@ -53,6 +85,18 @@ HRESULT __stdcall Mod_IDirect3DDevice8_Present(
 	D3DRASTER_STATUS stat;
 	HRESULT ret;
 
+	struct IDirect3DDevice8ExtraData* me_exdata;
+
+	EnterCriticalSection(&g_cs);
+	me_exdata = hashtable_get(g_IDirect3DDevice8ExtraDataTable, (uintptr_t)me);
+	LeaveCriticalSection(&g_cs);
+
+	if (me_exdata == NULL)
+		return E_FAIL; // XXX TODO logging
+
+	if (me_exdata->pp.Windowed)
+		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
@@ -62,7 +106,7 @@ HRESULT __stdcall Mod_IDirect3DDevice8_Present(
 		Sleep(0); // XXX TODO SleepEx?
 	} while (stat.InVBlank);
 
-	ret = Vanilla_IDirect3DDevice8_Present(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+	ret = me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
@@ -76,12 +120,17 @@ HRESULT __stdcall Mod_IDirect3DDevice8_Present(
 	return ret;
 }
 
-HRESULT __stdcall Mod_IDirect3D8_CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
+HRESULT g_Mod_IDirect3D8_CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
 {
-	HRESULT ret = Vanilla_IDirect3D8_CreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+	HRESULT ret;
 
-	// XXX TODO: retを見る
-	if (*ppReturnedDeviceInterface != NULL)
+	struct IDirect3D8ExtraData* me_exdata;
+	if ((me_exdata = hashtable_get(g_IDirect3D8ExtraDataTable, (uintptr_t)me)) == NULL)
+		return E_FAIL;
+
+	ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+
+	if (SUCCEEDED(ret))
 	{
 		DWORD orig_protect;
 		IDirect3DDevice8* device = *ppReturnedDeviceInterface;
@@ -95,7 +144,7 @@ HRESULT __stdcall Mod_IDirect3D8_CreateDevice(IDirect3D8* me, UINT Adapter, D3DD
 			return E_FAIL;
 		}
 
-		Vanilla_IDirect3DDevice8_Present = vtbl->Present;
+		hashtable_insert(g_IDirect3DDevice8ExtraDataTable, (uintptr_t)*ppReturnedDeviceInterface, AllocateIDirect3DDevice8ExtraData(vtbl->Present, *pPresentationParameters));
 		vtbl->Present = Mod_IDirect3DDevice8_Present;
 
 		// best effort
@@ -109,69 +158,88 @@ HRESULT __stdcall Mod_IDirect3D8_CreateDevice(IDirect3D8* me, UINT Adapter, D3DD
 	return ret;
 }
 
-// proxy dll
+HRESULT __stdcall Mod_IDirect3D8_CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
+{
+	HRESULT ret;
 
-typedef IDirect3D8* (WINAPI* Type_Direct3DCreate8)(UINT);
+	EnterCriticalSection(&g_cs);
+	ret = g_Mod_IDirect3D8_CreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+	LeaveCriticalSection(&g_cs);
 
-Type_Direct3DCreate8 Vanilla_Direct3DCreate8 = NULL;
-HMODULE d3d8handle = NULL;
+	return ret;
+}
 
-BOOL Init_Direct3DCreate8(void)
+void g_d3d8handle_lazy_init(HMODULE* ret)
 {
 	char sysdirpath[MAX_PATH + 1];
 	char* sysdllpath;
 	unsigned int len;
 	DWORD err;
 
-	if (Vanilla_Direct3DCreate8 != NULL)
-	{
-		return TRUE;
-	}
-
 	if ((len = GetSystemDirectoryA(sysdirpath, sizeof(sysdirpath))) == 0)
 	{
 		ThfError(GetLastError(), "%s: GetSystemDirectoryA failed.", __FUNCTION__);
-		return FALSE;
+		return;
 	}
 
 	if (len > sizeof(sysdirpath))  // XXX TODO review condition
 	{
 		ThfLog("%s: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
-		return FALSE;
+		return;
 	}
 
 	if (myasprintf(&sysdllpath, "%s\\d3d8.dll", sysdirpath) < 0)
 	{
 		ThfLog("%s: myasprintf failed.", __FUNCTION__);
-		return FALSE;
+		return;
 	}
 
-	d3d8handle = LoadLibraryA(sysdllpath);
+	*ret = LoadLibraryA(sysdllpath);
 	err = GetLastError();
 	free(sysdllpath);
-	if (d3d8handle == NULL)
+	if (*ret == NULL)
 	{
 		ThfError(err, "%s: LoadLibraryA failed.", __FUNCTION__);
-		return FALSE;
 	}
-
-	if ((Vanilla_Direct3DCreate8 = (Type_Direct3DCreate8)GetProcAddress(d3d8handle, "Direct3DCreate8")) == NULL)
-	{
-		ThfError(GetLastError(), "%s: LoadFuncFromD3D8 failed.", __FUNCTION__);
-		return FALSE;
-	}
-
-	return TRUE;
 }
 
-IDirect3D8* WINAPI Mod_Direct3DCreate8(UINT SDKVersion)
+HMODULE* g_d3d8handle(void)
+{
+	static HMODULE inner = NULL;
+
+	if (inner == NULL)
+		g_d3d8handle_lazy_init(&inner);
+	return &inner;
+}
+
+void g_Vanilla_Direct3DCreate8_lazy_init(Type_Direct3DCreate8* ret)
+{
+	if (*g_d3d8handle() == NULL)
+		return;
+
+	if ((*ret = (Type_Direct3DCreate8)GetProcAddress(*g_d3d8handle(), "Direct3DCreate8")) == NULL)
+	{
+		ThfError(GetLastError(), "%s: LoadFuncFromD3D8 failed.", __FUNCTION__);
+	}
+}
+
+Type_Direct3DCreate8* g_Vanilla_Direct3DCreate8(void)
+{
+	static Type_Direct3DCreate8 inner = NULL;
+
+	if (inner == NULL)
+		g_Vanilla_Direct3DCreate8_lazy_init(&inner);
+	return &inner;
+}
+
+IDirect3D8* g_Mod_Direct3DCreate8(UINT SDKVersion)
 {
 	IDirect3D8* ret;
 
-	if (!Init_Direct3DCreate8())
+	if (*g_Vanilla_Direct3DCreate8() == NULL)
 		return NULL;
 
-	ret = Vanilla_Direct3DCreate8(SDKVersion);
+	ret = (*g_Vanilla_Direct3DCreate8())(SDKVersion);
 
 	if (ret != NULL)
 	{
@@ -184,7 +252,7 @@ IDirect3D8* WINAPI Mod_Direct3DCreate8(UINT SDKVersion)
 			return NULL;
 		}
 
-		Vanilla_IDirect3D8_CreateDevice = vtbl->CreateDevice;
+		hashtable_insert(g_IDirect3D8ExtraDataTable, (uintptr_t)ret, AllocateIDirect3D8ExtraData(vtbl->CreateDevice));
 		vtbl->CreateDevice = Mod_IDirect3D8_CreateDevice;
 
 		// best effort
@@ -198,7 +266,16 @@ IDirect3D8* WINAPI Mod_Direct3DCreate8(UINT SDKVersion)
 	return ret;
 }
 
-// main
+IDirect3D8* WINAPI Mod_Direct3DCreate8(UINT SDKVersion)
+{
+	IDirect3D8* ret;
+
+	EnterCriticalSection(&g_cs);
+	ret = g_Mod_Direct3DCreate8(SDKVersion);
+	LeaveCriticalSection(&g_cs);
+
+	return ret;
+}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
@@ -209,12 +286,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	case DLL_PROCESS_ATTACH:
 	{
 		ThfLog("Attaching to the process: begin");
+		InitializeCriticalSection(&g_cs);
+		g_IDirect3D8ExtraDataTable = hashtable_new(); // XXX TODO lazy init?
+		g_IDirect3DDevice8ExtraDataTable = hashtable_new(); // XXX TODO lazy init?
 		ThfLog("Attaching to the process: succeeded");
 		break;
 	}
 	case DLL_PROCESS_DETACH:
 	{
 		ThfLog("Detaching to the process: begin");
+		//hashtable_del(g_IDirect3D8ExtraData_table); XXX TODO
+		//hashtable_del(g_IDirect3DDevice8ExtraData_table); XXX TODO
+		DeleteCriticalSection(&g_cs);
 		ThfLog("Detaching to the process: succeeded");
 		break;
 	}

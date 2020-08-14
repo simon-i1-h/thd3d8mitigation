@@ -5,13 +5,13 @@
 
 #include <stdarg.h>
 
-#define THF_LOG_PREFIX "[thd3d8fix]"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // util.c
+
+#define THF_LOG_PREFIX "[thd3d8fix]"
 
 int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);
