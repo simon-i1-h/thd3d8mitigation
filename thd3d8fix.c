@@ -17,12 +17,12 @@
 // XXX TODO error handling
 // XXX TODO 東方と同様にファイルにもロギング
 // XXX TODO review
-// XXX TODO fix data race and race condition
 // XXX TODO コード整形
 
 static CRITICAL_SECTION g_cs;
 
 typedef IDirect3D8* (WINAPI* Type_Direct3DCreate8)(UINT);
+
 typedef HRESULT(__stdcall* Type_IDirect3DDevice8_Present)(
 	IDirect3DDevice8*,
 	CONST RECT*,
@@ -30,6 +30,7 @@ typedef HRESULT(__stdcall* Type_IDirect3DDevice8_Present)(
 	HWND,
 	CONST RGNDATA*
 );
+
 typedef HRESULT(__stdcall* Type_IDirect3D8_CreateDevice)(
 	IDirect3D8*,
 	UINT,
@@ -46,13 +47,14 @@ struct IDirect3D8ExtraData {
 
 struct IDirect3DDevice8ExtraData {
 	Type_IDirect3DDevice8_Present VanillaPresent;
-	D3DPRESENT_PARAMETERS pp;  // XXX TODO 潜在的な危険性
+	D3DPRESENT_PARAMETERS pp;
 };
 
-//static Type_IDirect3DDevice8_Present Vanilla_IDirect3DDevice8_Present = NULL;
-//static Type_IDirect3D8_CreateDevice Vanilla_IDirect3D8_CreateDevice = NULL;
-struct hashtable* g_IDirect3D8ExtraDataTable; /* key: uintptr_t as IDirect3D8*, value: malloc-ed struct IDirect3D8ExtraData */
-struct hashtable* g_IDirect3DDevice8ExtraDataTable; /* key: uintptr_t as IDirect3DDevice8*, value: malloc-ed struct IDirect3DDevice8ExtraData */
+/* key: uintptr_t as IDirect3D8*, value: malloc-ed struct IDirect3D8ExtraData */
+struct hashtable* g_IDirect3D8ExtraDataTable;
+
+/* key: uintptr_t as IDirect3DDevice8*, value: malloc-ed struct IDirect3DDevice8ExtraData */
+struct hashtable* g_IDirect3DDevice8ExtraDataTable;
 
 struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(Type_IDirect3D8_CreateDevice VanillaCreateDevice)
 {
@@ -74,13 +76,7 @@ struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(Type_IDirect
 	return ret;
 }
 
-HRESULT __stdcall Mod_IDirect3DDevice8_Present(
-	IDirect3DDevice8* me,
-	CONST RECT* pSourceRect,
-	CONST RECT* pDestRect,
-	HWND hDestWindowOverride,
-	CONST RGNDATA* pDirtyRegion
-)
+HRESULT __stdcall Mod_IDirect3DDevice8_Present(IDirect3DDevice8* me, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
 	D3DRASTER_STATUS stat;
 	HRESULT ret;
@@ -293,14 +289,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 		break;
 	}
 	case DLL_PROCESS_DETACH:
-	{
-		ThfLog("Detaching to the process: begin");
-		//hashtable_del(g_IDirect3D8ExtraData_table); XXX TODO
-		//hashtable_del(g_IDirect3DDevice8ExtraData_table); XXX TODO
-		DeleteCriticalSection(&g_cs);
-		ThfLog("Detaching to the process: succeeded");
-		break;
-	}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 		break;
