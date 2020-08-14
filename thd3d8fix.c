@@ -260,13 +260,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	{
 	case DLL_PROCESS_ATTACH:
 	{
-		ThfLog("Version: %s", THF_VERSION);
-		ThfLog("Attaching to the process: begin");
+		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#general-best-practices
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": Version: " THF_VERSION "\n");
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\n");
 		InitializeCriticalSection(&g_CS);
-		ThfLog("Attaching to the process: succeeded");
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\n");
 		break;
 	}
 	case DLL_PROCESS_DETACH:
+		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#best-practices-for-synchronization
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 		break;
