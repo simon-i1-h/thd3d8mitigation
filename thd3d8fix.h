@@ -14,9 +14,11 @@ extern "C" {
 
 // thd3d8fix.c
 
-typedef IDirect3D8* (WINAPI* Type_Direct3DCreate8)(UINT);
+// type of Direct3DCreate8
+typedef IDirect3D8* (WINAPI* Direct3DCreate8_t)(UINT);
 
-typedef HRESULT(__stdcall* Type_IDirect3DDevice8_Present)(
+// type of IDirect3DDevice8::Present
+typedef HRESULT(__stdcall* IDirect3DDevice8Present_t)(
 	IDirect3DDevice8*,
 	CONST RECT*,
 	CONST RECT*,
@@ -24,7 +26,8 @@ typedef HRESULT(__stdcall* Type_IDirect3DDevice8_Present)(
 	CONST RGNDATA*
 );
 
-typedef HRESULT(__stdcall* Type_IDirect3D8_CreateDevice)(
+// type of IDirect3D8::CreateDevice
+typedef HRESULT(__stdcall* IDirect3D8CreateDevice_t)(
 	IDirect3D8*,
 	UINT,
 	D3DDEVTYPE,
@@ -35,11 +38,11 @@ typedef HRESULT(__stdcall* Type_IDirect3D8_CreateDevice)(
 );
 
 struct IDirect3D8ExtraData {
-	Type_IDirect3D8_CreateDevice VanillaCreateDevice;
+	IDirect3D8CreateDevice_t VanillaCreateDevice;
 };
 
 struct IDirect3DDevice8ExtraData {
-	Type_IDirect3DDevice8_Present VanillaPresent;
+	IDirect3DDevice8Present_t VanillaPresent;
 	D3DPRESENT_PARAMETERS pp;
 };
 
@@ -60,8 +63,8 @@ void ThfError(DWORD, const char*, ...);
 struct IDirect3D8ExtraDataTable;
 struct IDirect3DDevice8ExtraDataTable;
 
-struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(Type_IDirect3D8_CreateDevice);
-struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(Type_IDirect3DDevice8_Present, D3DPRESENT_PARAMETERS);
+struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(IDirect3D8CreateDevice_t);
+struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(IDirect3DDevice8Present_t, D3DPRESENT_PARAMETERS);
 
 struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void);
 void IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable *, IDirect3D8*, struct IDirect3D8ExtraData*);

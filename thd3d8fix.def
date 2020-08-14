@@ -1,4 +1,4 @@
 LIBRARY d3d8
 
 EXPORTS
-    Direct3DCreate8 = Mod_Direct3DCreate8
+    Direct3DCreate8 = ModDirect3DCreate8
