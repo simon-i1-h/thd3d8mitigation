@@ -23,8 +23,23 @@
 
 static CRITICAL_SECTION g_CS;
 
-static struct IDirect3D8ExtraDataTable* cs_IDirect3D8ExtraDataTable;
-static struct IDirect3DDevice8ExtraDataTable* cs_IDirect3DDevice8ExtraDataTable;
+struct IDirect3D8ExtraDataTable** cs_IDirect3D8ExtraDataTable(void)
+{
+	static struct IDirect3D8ExtraDataTable* inner = NULL;
+
+	if (inner == NULL)
+		inner = IDirect3D8ExtraDataTableNew();
+	return &inner;
+}
+
+struct IDirect3DDevice8ExtraDataTable** cs_IDirect3DDevice8ExtraDataTable(void)
+{
+	static struct IDirect3DDevice8ExtraDataTable* inner = NULL;
+
+	if (inner == NULL)
+		inner = IDirect3DDevice8ExtraDataTableNew();
+	return &inner;
+}
 
 struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(IDirect3D8CreateDevice_t VanillaCreateDevice)
 {
@@ -54,7 +69,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3DDevice8ExtraDataTableGet(cs_IDirect3DDevice8ExtraDataTable, me);
+	me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_IDirect3DDevice8ExtraDataTable(), me);
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -91,7 +106,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 	HRESULT ret;
 
 	struct IDirect3D8ExtraData* me_exdata;
-	if ((me_exdata = IDirect3D8ExtraDataTableGet(cs_IDirect3D8ExtraDataTable, me)) == NULL)
+	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_IDirect3D8ExtraDataTable(), me)) == NULL)
 		return E_FAIL;
 
 	ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
@@ -108,7 +123,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 			return E_FAIL;
 		}
 
-		IDirect3DDevice8ExtraDataTableInsert(cs_IDirect3DDevice8ExtraDataTable, *ppReturnedDeviceInterface, AllocateIDirect3DDevice8ExtraData(vtbl->Present, *pPresentationParameters));
+		IDirect3DDevice8ExtraDataTableInsert(*cs_IDirect3DDevice8ExtraDataTable(), *ppReturnedDeviceInterface, AllocateIDirect3DDevice8ExtraData(vtbl->Present, *pPresentationParameters));
 		vtbl->Present = ModIDirect3DDevice8Present;
 
 		// best effort
@@ -216,7 +231,7 @@ IDirect3D8* cs_ModDirect3DCreate8(UINT SDKVersion)
 			return NULL;
 		}
 
-		IDirect3D8ExtraDataTableInsert(cs_IDirect3D8ExtraDataTable, ret, AllocateIDirect3D8ExtraData(vtbl->CreateDevice));
+		IDirect3D8ExtraDataTableInsert(*cs_IDirect3D8ExtraDataTable(), ret, AllocateIDirect3D8ExtraData(vtbl->CreateDevice));
 		vtbl->CreateDevice = ModIDirect3D8CreateDevice;
 
 		// best effort
@@ -251,8 +266,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	{
 		ThfLog("Attaching to the process: begin");
 		InitializeCriticalSection(&g_CS);
-		cs_IDirect3D8ExtraDataTable = IDirect3D8ExtraDataTableNew(); // XXX TODO lazy init?
-		cs_IDirect3DDevice8ExtraDataTable = IDirect3DDevice8ExtraDataTableNew(); // XXX TODO lazy init?
 		ThfLog("Attaching to the process: succeeded");
 		break;
 	}
