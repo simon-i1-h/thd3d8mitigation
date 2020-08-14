@@ -23,6 +23,8 @@
 // XXX TODO コード整形
 // XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
 // XXX TODO グローバル変数相当の関数の名前を縮める
+// XXX TODO IDirect3DDevice8::Resetにhook
+// XXX TODO フルスクリーンモードでもD3DPRESENT_PARAMETERSで垂直同期を待つように設定されているときだけ垂直同期を待つ
 
 static CRITICAL_SECTION g_CS;
 
