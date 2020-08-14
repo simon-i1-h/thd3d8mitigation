@@ -21,8 +21,8 @@
 
 static CRITICAL_SECTION g_CS;
 
-struct IDirect3D8ExtraDataTable* g_IDirect3D8ExtraDataTable;
-struct IDirect3DDevice8ExtraDataTable* g_IDirect3DDevice8ExtraDataTable;
+static struct IDirect3D8ExtraDataTable* g_IDirect3D8ExtraDataTable;
+static struct IDirect3DDevice8ExtraDataTable* g_IDirect3DDevice8ExtraDataTable;
 
 struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(IDirect3D8CreateDevice_t VanillaCreateDevice)
 {
@@ -99,8 +99,6 @@ HRESULT g_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE Dev
 		DWORD orig_protect;
 		IDirect3DDevice8* device = *ppReturnedDeviceInterface;
 		IDirect3DDevice8Vtbl* vtbl = device->lpVtbl;
-
-		// IDirect3DDevice8::Present
 
 		if (!VirtualProtect(&vtbl->Present, sizeof(vtbl->Present), PAGE_READWRITE, &orig_protect))
 		{
