@@ -182,7 +182,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 		IDirect3DDevice8* device = *ppReturnedDeviceInterface;
 		IDirect3DDevice8Vtbl* vtbl = device->lpVtbl;
 
-		// hook IDirect3DDevice8::Present and IDirect3DDevice8::Release (inherit from IUnknown::Release)
+		// hook IDirect3DDevice8::Present, IDirect3DDevice8::Release (inherit from IUnknown::Release), and IDirect3DDevice8::Reset
 
 		if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 		{
