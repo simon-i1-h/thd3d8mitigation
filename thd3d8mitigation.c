@@ -9,10 +9,10 @@
 
 #include <stdlib.h>
 
-#include "thd3d8fix.h"
+#include "thd3d8mitigation.h"
 
 // Naming convention:
-//   Thf*: thd3d8fix
+//   Thf*: thd3d8mitigation
 //   cs_*: Critical section
 //   g_*: Global variable
 //   *_t: Type identifier

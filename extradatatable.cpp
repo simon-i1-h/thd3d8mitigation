@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "thd3d8fix.h"
+#include "thd3d8mitigation.h"
 
 // XXX TODO exception safety
 

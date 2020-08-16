@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30330.147
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thd3d8fix", "thd3d8fix.vcxproj", "{0B80C453-982B-40B6-B159-93697F7AFC86}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thd3d8mitigation", "thd3d8mitigation.vcxproj", "{0B80C453-982B-40B6-B159-93697F7AFC86}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

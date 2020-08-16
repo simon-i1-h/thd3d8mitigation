@@ -14,7 +14,7 @@ extern "C" {
 
 #define THF_VERSION "0.1"
 
-// thd3d8fix.c
+// thd3d8mitigation.c
 
 // type of Direct3DCreate8
 typedef IDirect3D8* (WINAPI* Direct3DCreate8_t)(UINT);
@@ -58,7 +58,7 @@ struct IDirect3DDevice8ExtraData {
 
 // util.c
 
-#define THF_LOG_PREFIX "[thd3d8fix]"
+#define THF_LOG_PREFIX "[thd3d8mitigation]"
 
 int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);

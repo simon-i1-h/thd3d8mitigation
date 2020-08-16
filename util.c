@@ -1,4 +1,4 @@
-#include "thd3d8fix.h"
+#include "thd3d8mitigation.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
