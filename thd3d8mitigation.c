@@ -22,13 +22,12 @@
 // XXX TODO review
 // XXX TODO コード整形
 // XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
-// XXX TODO グローバル変数相当の関数の名前を縮める
 // XXX TODO IDirect3DDevice8::Resetにhook
 // XXX TODO フルスクリーンモードでもD3DPRESENT_PARAMETERSで垂直同期を待つように設定されているときだけ垂直同期を待つ
 
 static CRITICAL_SECTION g_CS;
 
-struct IDirect3D8ExtraDataTable** cs_IDirect3D8ExtraDataTable(void)
+struct IDirect3D8ExtraDataTable** cs_D3D8ExDataTable(void)
 {
 	static struct IDirect3D8ExtraDataTable* inner = NULL;
 
@@ -37,7 +36,7 @@ struct IDirect3D8ExtraDataTable** cs_IDirect3D8ExtraDataTable(void)
 	return &inner;
 }
 
-struct IDirect3DDevice8ExtraDataTable** cs_IDirect3DDevice8ExtraDataTable(void)
+struct IDirect3DDevice8ExtraDataTable** cs_D3DDev8ExDataTable(void)
 {
 	static struct IDirect3DDevice8ExtraDataTable* inner = NULL;
 
@@ -75,7 +74,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_IDirect3DDevice8ExtraDataTable(), me);
+	me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me);
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -112,7 +111,7 @@ ULONG cs_ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	ULONG ret;
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
-	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_IDirect3DDevice8ExtraDataTable(), me)) == NULL)
+	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me)) == NULL)
 		return 0; // XXX FIXME error handling
 
 	ret = me_exdata->VanillaRelease(me);
@@ -123,8 +122,8 @@ ULONG cs_ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	if (ret == 0)
 	{
 		free(me_exdata);
-		IDirect3DDevice8ExtraDataTableErase(*cs_IDirect3DDevice8ExtraDataTable(), me);
-		IDirect3DDevice8ExtraDataTableShrinkToFit(*cs_IDirect3DDevice8ExtraDataTable());
+		IDirect3DDevice8ExtraDataTableErase(*cs_D3DDev8ExDataTable(), me);
+		IDirect3DDevice8ExtraDataTableShrinkToFit(*cs_D3DDev8ExDataTable());
 	}
 
 	return ret;
@@ -146,7 +145,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 	HRESULT ret;
 
 	struct IDirect3D8ExtraData* me_exdata;
-	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_IDirect3D8ExtraDataTable(), me)) == NULL)
+	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_D3D8ExDataTable(), me)) == NULL)
 		return E_FAIL;
 
 	ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
@@ -165,7 +164,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 			return E_FAIL;
 		}
 
-		IDirect3DDevice8ExtraDataTableInsert(*cs_IDirect3DDevice8ExtraDataTable(), device, AllocateIDirect3DDevice8ExtraData(vtbl->Present, vtbl->Release, *pPresentationParameters));
+		IDirect3DDevice8ExtraDataTableInsert(*cs_D3DDev8ExDataTable(), device, AllocateIDirect3DDevice8ExtraData(vtbl->Present, vtbl->Release, *pPresentationParameters));
 		vtbl->Present = ModIDirect3DDevice8Present;
 		vtbl->Release = ModIDirect3DDevice8Release;
 
@@ -193,7 +192,7 @@ ULONG cs_ModIDirect3D8Release(IDirect3D8* me)
 	ULONG ret;
 	struct IDirect3D8ExtraData* me_exdata;
 
-	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_IDirect3D8ExtraDataTable(), me)) == NULL)
+	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_D3D8ExDataTable(), me)) == NULL)
 		return 0; // XXX FIXME error handling
 
 	ret = me_exdata->VanillaRelease(me);
@@ -204,8 +203,8 @@ ULONG cs_ModIDirect3D8Release(IDirect3D8* me)
 	if (ret == 0)
 	{
 		free(me_exdata);
-		IDirect3D8ExtraDataTableErase(*cs_IDirect3D8ExtraDataTable(), me);
-		IDirect3D8ExtraDataTableShrinkToFit(*cs_IDirect3D8ExtraDataTable());
+		IDirect3D8ExtraDataTableErase(*cs_D3D8ExDataTable(), me);
+		IDirect3D8ExtraDataTableShrinkToFit(*cs_D3D8ExDataTable());
 	}
 
 	return ret;
@@ -303,7 +302,7 @@ IDirect3D8* cs_ModDirect3DCreate8(UINT SDKVersion)
 			return NULL;
 		}
 
-		IDirect3D8ExtraDataTableInsert(*cs_IDirect3D8ExtraDataTable(), ret, AllocateIDirect3D8ExtraData(vtbl->CreateDevice, vtbl->Release));
+		IDirect3D8ExtraDataTableInsert(*cs_D3D8ExDataTable(), ret, AllocateIDirect3D8ExtraData(vtbl->CreateDevice, vtbl->Release));
 		vtbl->CreateDevice = ModIDirect3D8CreateDevice;
 		vtbl->Release = ModIDirect3D8Release;
 
