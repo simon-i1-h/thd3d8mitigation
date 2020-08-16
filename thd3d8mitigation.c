@@ -7,7 +7,6 @@
 #include <d3d8.h>
 
 #include <tchar.h>
-#include <mmsystem.h>
 
 #include <stdlib.h>
 
