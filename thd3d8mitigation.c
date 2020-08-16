@@ -24,6 +24,7 @@
 //   https://docs.microsoft.com/ja-jp/windows/win32/devnotes/rtlgetversion
 //   ↑これをLoadLibrary + GetProcAddressで
 //   引数の型はwindows.hでいいらしい。
+// XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
 
 static CRITICAL_SECTION g_CS;
 
