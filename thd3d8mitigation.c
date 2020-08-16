@@ -186,7 +186,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 
 		if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 		{
-			ThfError(GetLastError(), "%s: VirtualProtect failed.", __FUNCTION__);
+			ThfError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 
@@ -197,7 +197,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 
 		// best effort
 		if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-			ThfError(GetLastError(), "%s: VirtualProtect failed.", __FUNCTION__);
+			ThfError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
 	}
 
 	return ret;
