@@ -24,6 +24,7 @@
 // XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
 // XXX TODO IDirect3DDevice8::Resetにhook
 // XXX TODO フルスクリーンモードでもD3DPRESENT_PARAMETERSで垂直同期を待つように設定されているときだけ垂直同期を待つ
+// XXX TODO Windowsのビルド番号を見て機能の有効/無効を自動で切り替えたい
 
 static CRITICAL_SECTION g_CS;
 
