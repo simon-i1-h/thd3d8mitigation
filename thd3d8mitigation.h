@@ -45,6 +45,9 @@ typedef HRESULT(__stdcall* IDirect3DDevice8Present_t)(
 // type of IDirect3DDevice8::Release (inherit from IUnknown::Release)
 typedef ULONG(__stdcall* IDirect3DDevice8Release_t)(IDirect3DDevice8*);
 
+// type of IDirect3DDevice8::Reset
+typedef HRESULT(__stdcall* IDirect3DDevice8Reset_t)(IDirect3DDevice8*, D3DPRESENT_PARAMETERS*);
+
 struct IDirect3D8ExtraData {
 	IDirect3D8CreateDevice_t VanillaCreateDevice;
 	IDirect3D8Release_t VanillaRelease;
@@ -53,6 +56,7 @@ struct IDirect3D8ExtraData {
 struct IDirect3DDevice8ExtraData {
 	IDirect3DDevice8Present_t VanillaPresent;
 	IDirect3DDevice8Release_t VanillaRelease;
+	IDirect3DDevice8Reset_t VanillaReset;
 	D3DPRESENT_PARAMETERS pp;
 };
 

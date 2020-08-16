@@ -22,7 +22,6 @@
 // XXX TODO review
 // XXX TODO コード整形
 // XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
-// XXX TODO IDirect3DDevice8::Resetにhook
 // XXX TODO Windowsのビルド番号を見て機能の有効/無効を自動で切り替えたい
 
 static CRITICAL_SECTION g_CS;
@@ -55,13 +54,13 @@ struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(IDirect3D8CreateDevice_t
 	return ret;
 }
 
-struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(IDirect3DDevice8Present_t VanillaPresent, IDirect3DDevice8Release_t VanillaRelease, D3DPRESENT_PARAMETERS pp)
+struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(IDirect3DDevice8Present_t VanillaPresent, IDirect3DDevice8Release_t VanillaRelease, IDirect3DDevice8Reset_t VanillaReset, D3DPRESENT_PARAMETERS pp)
 {
 	struct IDirect3DDevice8ExtraData* ret;
 
 	if ((ret = malloc(sizeof(*ret))) == NULL) // XXX TODO error handling
 		return NULL;
-	*ret = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = VanillaPresent, .VanillaRelease = VanillaRelease, .pp = pp };
+	*ret = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = VanillaPresent, .VanillaRelease = VanillaRelease, .VanillaReset = VanillaReset, .pp = pp };
 	return ret;
 }
 
@@ -140,6 +139,33 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	return ret;
 }
 
+HRESULT cs_ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
+{
+	HRESULT ret;
+	struct IDirect3DDevice8ExtraData* me_exdata;
+
+	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me)) == NULL)
+		return E_FAIL; // XXX FIXME error handling
+
+	ret = me_exdata->VanillaReset(me, pPresentationParameters);
+
+	if (SUCCEEDED(ret))
+		me_exdata->pp = *pPresentationParameters;
+
+	return ret;
+}
+
+HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
+{
+	HRESULT ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3DDevice8Reset(me, pPresentationParameters);
+	LeaveCriticalSection(&g_CS);
+
+	return ret;
+}
+
 HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
@@ -164,9 +190,10 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 			return E_FAIL;
 		}
 
-		IDirect3DDevice8ExtraDataTableInsert(*cs_D3DDev8ExDataTable(), device, AllocateIDirect3DDevice8ExtraData(vtbl->Present, vtbl->Release, *pPresentationParameters));
+		IDirect3DDevice8ExtraDataTableInsert(*cs_D3DDev8ExDataTable(), device, AllocateIDirect3DDevice8ExtraData(vtbl->Present, vtbl->Release, vtbl->Reset, *pPresentationParameters));
 		vtbl->Present = ModIDirect3DDevice8Present;
 		vtbl->Release = ModIDirect3DDevice8Release;
+		vtbl->Reset = ModIDirect3DDevice8Reset;
 
 		// best effort
 		if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
