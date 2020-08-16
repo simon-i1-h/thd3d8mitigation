@@ -23,7 +23,6 @@
 // XXX TODO コード整形
 // XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
 // XXX TODO IDirect3DDevice8::Resetにhook
-// XXX TODO フルスクリーンモードでもD3DPRESENT_PARAMETERSで垂直同期を待つように設定されているときだけ垂直同期を待つ
 // XXX TODO Windowsのビルド番号を見て機能の有効/無効を自動で切り替えたい
 
 static CRITICAL_SECTION g_CS;
@@ -81,7 +80,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	if (me_exdata == NULL)
 		return E_FAIL; // XXX TODO logging
 
-	if (me_exdata->pp.Windowed)
+	if (me_exdata->pp.Windowed || (me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_DEFAULT && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_ONE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_TWO && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_THREE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_FOUR))
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
 	do {
