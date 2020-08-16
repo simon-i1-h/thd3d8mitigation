@@ -1,10 +1,13 @@
+#include "thd3d8mitigation.h"
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#define CINTERFACE
+#include <d3d8.h>
+
 #include <stdexcept>
 #include <unordered_map>
-
-#include "thd3d8mitigation.h"
 
 // XXX TODO exception safety
 

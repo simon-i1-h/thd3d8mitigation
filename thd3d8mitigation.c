@@ -1,4 +1,6 @@
-﻿#define WIN32_LEAN_AND_MEAN
+﻿#include "thd3d8mitigation.h"
+
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #define CINTERFACE
@@ -8,8 +10,6 @@
 #include <mmsystem.h>
 
 #include <stdlib.h>
-
-#include "thd3d8mitigation.h"
 
 // Naming convention:
 //   Thf*: thd3d8mitigation
@@ -70,7 +70,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	D3DRASTER_STATUS stat;
 	HRESULT ret;
 
-	// me_exdataはmeに1対1で紐づく拡張データと考えられるので、少なくともmeを扱っている間はデータ競合や競合状態について考えなくてよい。
+	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	EnterCriticalSection(&g_CS);
