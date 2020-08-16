@@ -25,6 +25,7 @@
 //   ↑これをLoadLibrary + GetProcAddressで
 //   引数の型はwindows.hでいいらしい。
 // XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
+// XXX TODO 一度でも遅延初期化に失敗したらそれ以降は初期化しない。
 
 static CRITICAL_SECTION g_CS;
 
