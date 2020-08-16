@@ -21,6 +21,10 @@
 // XXX TODO review
 // XXX TODO コード整形
 // XXX TODO Windowsのビルド番号を見て機能の有効/無効を自動で切り替えたい
+//   https://docs.microsoft.com/ja-jp/windows/win32/devnotes/rtlgetversion
+//   ↑これをLoadLibrary + GetProcAddressで
+//   引数の型はwindows.hでいいらしい。
+// XXX TODO 潜在的なデッドロックの可能性を排除
 
 static CRITICAL_SECTION g_CS;
 
@@ -116,7 +120,7 @@ ULONG cs_ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me)) == NULL)
 		return 0; // XXX FIXME error handling
 
-	ret = me_exdata->VanillaRelease(me);
+	ret = me_exdata->VanillaRelease(me); // XXX TODO 潜在的なデッドロックの可能性を排除
 
 	// XXX TODO 解放されたかどうかはほかの方法で検出したほうがいいかも。その場合、Releaseのhookは適切ではないかもしれない。
 	// https://docs.microsoft.com/en-us/previous-versions/windows/embedded/ms890669(v=msdn.10)?redirectedfrom=MSDN
@@ -150,7 +154,7 @@ HRESULT cs_ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS*
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me)) == NULL)
 		return E_FAIL; // XXX FIXME error handling
 
-	ret = me_exdata->VanillaReset(me, pPresentationParameters);
+	ret = me_exdata->VanillaReset(me, pPresentationParameters); // XXX TODO 潜在的なデッドロックの可能性を排除
 
 	if (SUCCEEDED(ret))
 		me_exdata->pp = *pPresentationParameters;
@@ -177,6 +181,7 @@ HRESULT cs_ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE De
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_D3D8ExDataTable(), me)) == NULL)
 		return E_FAIL;
 
+	// XXX TODO 潜在的なデッドロックの可能性を排除
 	ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 
 	if (SUCCEEDED(ret))
@@ -225,7 +230,7 @@ ULONG cs_ModIDirect3D8Release(IDirect3D8* me)
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(*cs_D3D8ExDataTable(), me)) == NULL)
 		return 0; // XXX FIXME error handling
 
-	ret = me_exdata->VanillaRelease(me);
+	ret = me_exdata->VanillaRelease(me); // XXX TODO 潜在的なデッドロックの可能性を排除
 
 	// XXX TODO 解放されたかどうかはほかの方法で検出したほうがいいかも。その場合、Releaseのhookは適切ではないかもしれない。
 	// https://docs.microsoft.com/en-us/previous-versions/windows/embedded/ms890669(v=msdn.10)?redirectedfrom=MSDN
@@ -317,7 +322,7 @@ IDirect3D8* cs_ModDirect3DCreate8(UINT SDKVersion)
 	if (*cs_VanillaDirect3DCreate8() == NULL)
 		return NULL;
 
-	ret = (*cs_VanillaDirect3DCreate8())(SDKVersion);
+	ret = (*cs_VanillaDirect3DCreate8())(SDKVersion); // XXX TODO 潜在的なデッドロックの可能性を排除
 
 	if (ret != NULL)
 	{
