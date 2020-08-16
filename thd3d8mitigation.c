@@ -21,7 +21,6 @@
 // XXX TODO 東方と同様にファイルにもロギング
 // XXX TODO review
 // XXX TODO コード整形
-// XXX TODO 東方と直接やりとりするわけではないのでUTF-8にできるのでする
 // XXX TODO Windowsのビルド番号を見て機能の有効/無効を自動で切り替えたい
 
 static CRITICAL_SECTION g_CS;
