@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 // Naming convention:
-//   Thf*: thd3d8mitigation
+//   Thf*: thd3d8mitigation: XXX TODO rename
 //   cs_*: Critical section
 //   g_*: Global variable
 //   *_t: Type identifier
@@ -26,6 +26,10 @@
 //   引数の型はwindows.hでいいらしい。
 // XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
 // XXX TODO 一度でも遅延初期化に失敗したらそれ以降は初期化しない。
+// XXX TODO クリティカルセクション以外のグローバル変数はDirect3DCreate8ですべて初期化する。初期化以降はすべてのグローバル変数はnonnullと考えてよい。一度でも初期化に失敗したら、それ以降Direct3DCreate8は常にNULLを返す。
+// XXX TODO ログにスレッドIDを表示 getcurrentthreadidを使う
+// XXX TODO エクストラデータテーブルのvalueはmallocしないことにする
+
 
 static CRITICAL_SECTION g_CS;
 
