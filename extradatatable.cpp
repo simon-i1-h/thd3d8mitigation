@@ -32,7 +32,7 @@ extern "C" struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void)
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -48,7 +48,7 @@ extern "C" int IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -64,7 +64,7 @@ extern "C" void IDirect3D8ExtraDataTableErase(struct IDirect3D8ExtraDataTable* h
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -81,7 +81,7 @@ extern "C" void IDirect3D8ExtraDataTableShrinkToFit(struct IDirect3D8ExtraDataTa
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -120,7 +120,7 @@ extern "C" struct IDirect3DDevice8ExtraDataTable* IDirect3DDevice8ExtraDataTable
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -136,7 +136,7 @@ extern "C" int IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8Extra
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -152,7 +152,7 @@ extern "C" void IDirect3DDevice8ExtraDataTableErase(struct IDirect3DDevice8Extra
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -169,7 +169,7 @@ extern "C" void IDirect3DDevice8ExtraDataTableShrinkToFit(struct IDirect3DDevice
 	}
 	catch (...)
 	{
-		ThfFatal(1, "%s: unexpected exception.", __FUNCTION__);
+		ThfFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
