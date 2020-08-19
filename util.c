@@ -124,3 +124,14 @@ void ThfError(DWORD err, const char* fmt, ...)
 	ThfVError(err, fmt, ap);
 	va_end(ap);
 }
+
+// XXX TODO proper exit
+__declspec(noreturn) void ThfFatal(int exitcode, const char* fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	ThfVLog(fmt, ap);
+	va_end(ap);
+	ExitProcess(exitcode);
+}
