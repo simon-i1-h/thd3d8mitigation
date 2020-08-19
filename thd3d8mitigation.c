@@ -8,8 +8,6 @@
 
 #include <tchar.h>
 
-#include <stdlib.h>
-
 // Naming convention:
 //   Thf*: thd3d8mitigation: XXX TODO rename
 //   cs_*: Critical section
@@ -27,7 +25,6 @@
 // XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
 // XXX TODO 一度でも遅延初期化に失敗したらそれ以降は初期化しない。
 // XXX TODO クリティカルセクション以外のグローバル変数はDirect3DCreate8ですべて初期化する。初期化以降はすべてのグローバル変数はnonnullと考えてよい。一度でも初期化に失敗したら、それ以降Direct3DCreate8は常にNULLを返す。
-// XXX TODO エクストラデータテーブルのvalueはmallocしないことにする
 
 
 static CRITICAL_SECTION g_CS;
@@ -48,26 +45,6 @@ struct IDirect3DDevice8ExtraDataTable** cs_D3DDev8ExDataTable(void)
 	if (inner == NULL)
 		inner = IDirect3DDevice8ExtraDataTableNew();
 	return &inner;
-}
-
-struct IDirect3D8ExtraData* AllocateIDirect3D8ExtraData(IDirect3D8CreateDevice_t VanillaCreateDevice, IDirect3D8Release_t VanillaRelease)
-{
-	struct IDirect3D8ExtraData* ret;
-
-	if ((ret = malloc(sizeof(*ret))) == NULL) // XXX TODO error handling
-		return NULL;
-	*ret = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = VanillaCreateDevice, .VanillaRelease = VanillaRelease };
-	return ret;
-}
-
-struct IDirect3DDevice8ExtraData* AllocateIDirect3DDevice8ExtraData(IDirect3DDevice8Present_t VanillaPresent, IDirect3DDevice8Release_t VanillaRelease, IDirect3DDevice8Reset_t VanillaReset, D3DPRESENT_PARAMETERS pp)
-{
-	struct IDirect3DDevice8ExtraData* ret;
-
-	if ((ret = malloc(sizeof(*ret))) == NULL) // XXX TODO error handling
-		return NULL;
-	*ret = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = VanillaPresent, .VanillaRelease = VanillaRelease, .VanillaReset = VanillaReset, .pp = pp };
-	return ret;
 }
 
 HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
@@ -140,7 +117,6 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	{
 		// store to critical section
 		EnterCriticalSection(&g_CS);
-		free(me_exdata);
 		IDirect3DDevice8ExtraDataTableErase(*cs_D3DDev8ExDataTable(), me);
 		IDirect3DDevice8ExtraDataTableShrinkToFit(*cs_D3DDev8ExDataTable());
 		LeaveCriticalSection(&g_CS);
@@ -178,7 +154,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 	DWORD orig_protect;
 	IDirect3DDevice8* d3ddev8;
 	IDirect3DDevice8Vtbl* vtbl;
-	struct IDirect3DDevice8ExtraData* d3ddev8_exdata;
+	struct IDirect3DDevice8ExtraData d3ddev8_exdata;
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
@@ -203,7 +179,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 		return E_FAIL;
 	}
 
-	d3ddev8_exdata = AllocateIDirect3DDevice8ExtraData(vtbl->Present, vtbl->Release, vtbl->Reset, *pPresentationParameters);
+	d3ddev8_exdata = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = vtbl->Present, .VanillaRelease = vtbl->Release, .VanillaReset = vtbl->Reset, .pp = *pPresentationParameters };
 	vtbl->Present = ModIDirect3DDevice8Present;
 	vtbl->Release = ModIDirect3DDevice8Release;
 	vtbl->Reset = ModIDirect3DDevice8Reset;
@@ -243,7 +219,6 @@ ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
 	{
 		// store to critical section
 		EnterCriticalSection(&g_CS);
-		free(me_exdata);
 		IDirect3D8ExtraDataTableErase(*cs_D3D8ExDataTable(), me);
 		IDirect3D8ExtraDataTableShrinkToFit(*cs_D3D8ExDataTable());
 		LeaveCriticalSection(&g_CS);
@@ -317,7 +292,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	Direct3DCreate8_t vanillaDirect3DCreate8;
 	DWORD orig_protect;
 	IDirect3D8Vtbl* vtbl;
-	struct IDirect3D8ExtraData* d3d8_exdata;
+	struct IDirect3D8ExtraData d3d8_exdata;
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
@@ -337,7 +312,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 		return NULL;
 	}
 
-	d3d8_exdata = AllocateIDirect3D8ExtraData(vtbl->CreateDevice, vtbl->Release);
+	d3d8_exdata = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release };
 	vtbl->CreateDevice = ModIDirect3D8CreateDevice;
 	vtbl->Release = ModIDirect3D8Release;
 

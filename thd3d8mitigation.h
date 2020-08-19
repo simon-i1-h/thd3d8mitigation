@@ -57,7 +57,7 @@ struct IDirect3DDevice8ExtraData {
 	IDirect3DDevice8Present_t VanillaPresent;
 	IDirect3DDevice8Release_t VanillaRelease;
 	IDirect3DDevice8Reset_t VanillaReset;
-	D3DPRESENT_PARAMETERS pp;
+	D3DPRESENT_PARAMETERS pp; // XXX TODO D3DPRESENT_PARAMETERS*
 };
 
 // util.c
@@ -77,15 +77,15 @@ struct IDirect3D8ExtraDataTable;
 struct IDirect3DDevice8ExtraDataTable;
 
 struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void);
-int IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable *, IDirect3D8*, /* malloc-ed */ struct IDirect3D8ExtraData*);
+int IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable *, IDirect3D8*, struct IDirect3D8ExtraData);
 void IDirect3D8ExtraDataTableErase(struct IDirect3D8ExtraDataTable *, IDirect3D8*);
-/* malloc-ed */ struct IDirect3D8ExtraData* IDirect3D8ExtraDataTableGet(struct IDirect3D8ExtraDataTable *, IDirect3D8*);
+struct IDirect3D8ExtraData* IDirect3D8ExtraDataTableGet(struct IDirect3D8ExtraDataTable *, IDirect3D8*);
 void IDirect3D8ExtraDataTableShrinkToFit(struct IDirect3D8ExtraDataTable*);
 
 struct IDirect3DDevice8ExtraDataTable* IDirect3DDevice8ExtraDataTableNew(void);
-int IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*, /* malloc-ed */ struct IDirect3DDevice8ExtraData*);
+int IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*, struct IDirect3DDevice8ExtraData);
 void IDirect3DDevice8ExtraDataTableErase(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*);
-/* malloc-ed */ struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*);
+struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*);
 void IDirect3DDevice8ExtraDataTableShrinkToFit(struct IDirect3DDevice8ExtraDataTable*);
 
 #ifdef __cplusplus

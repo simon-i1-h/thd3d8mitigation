@@ -9,15 +9,15 @@
 #include <stdexcept>
 #include <unordered_map>
 
-using d3d8pair = std::pair<IDirect3D8*, IDirect3D8ExtraData*>;
-using d3ddevice8pair = std::pair<IDirect3DDevice8*, IDirect3DDevice8ExtraData*>;
+using d3d8pair = std::pair<IDirect3D8*, struct IDirect3D8ExtraData>;
+using d3ddevice8pair = std::pair<IDirect3DDevice8*, struct IDirect3DDevice8ExtraData>;
 
 struct IDirect3D8ExtraDataTable {
-	std::unordered_map<IDirect3D8*, IDirect3D8ExtraData*> ht;
+	std::unordered_map<IDirect3D8*, struct IDirect3D8ExtraData> ht;
 };
 
 struct IDirect3DDevice8ExtraDataTable {
-	std::unordered_map<IDirect3DDevice8*, IDirect3DDevice8ExtraData*> ht;
+	std::unordered_map<IDirect3DDevice8*, struct IDirect3DDevice8ExtraData> ht;
 };
 
 extern "C" struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void)
@@ -36,7 +36,7 @@ extern "C" struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void)
 	}
 }
 
-extern "C" int IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h, IDirect3D8* k, struct IDirect3D8ExtraData* v)
+extern "C" int IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h, IDirect3D8* k, struct IDirect3D8ExtraData v)
 {
 	try
 	{
@@ -73,7 +73,7 @@ extern "C" void IDirect3D8ExtraDataTableShrinkToFit(struct IDirect3D8ExtraDataTa
 	try
 	{
 		// https://ja.wikibooks.org/wiki/More_C%2B%2B_Idioms/%E7%B8%AE%E3%82%81%E3%81%A6%E5%90%88%E3%82%8F%E3%81%9B%E3%82%8B(Shrink-to-fit)
-		std::unordered_map<IDirect3D8*, IDirect3D8ExtraData*>(h->ht).swap(h->ht);
+		std::unordered_map<IDirect3D8*, struct IDirect3D8ExtraData>(h->ht).swap(h->ht);
 	}
 	catch (std::exception& e)
 	{
@@ -91,7 +91,7 @@ extern "C" struct IDirect3D8ExtraData* IDirect3D8ExtraDataTableGet(struct IDirec
 	{
 		try
 		{
-			return h->ht.at(k);
+			return &h->ht.at(k);
 		}
 		catch (std::out_of_range&)
 		{
@@ -124,7 +124,7 @@ extern "C" struct IDirect3DDevice8ExtraDataTable* IDirect3DDevice8ExtraDataTable
 	}
 }
 
-extern "C" int IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k, struct IDirect3DDevice8ExtraData* v)
+extern "C" int IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k, struct IDirect3DDevice8ExtraData v)
 {
 	try
 	{
@@ -161,7 +161,7 @@ extern "C" void IDirect3DDevice8ExtraDataTableShrinkToFit(struct IDirect3DDevice
 	try
 	{
 		// https://ja.wikibooks.org/wiki/More_C%2B%2B_Idioms/%E7%B8%AE%E3%82%81%E3%81%A6%E5%90%88%E3%82%8F%E3%81%9B%E3%82%8B(Shrink-to-fit)
-		std::unordered_map<IDirect3DDevice8*, IDirect3DDevice8ExtraData*>(h->ht).swap(h->ht);
+		std::unordered_map<IDirect3DDevice8*, struct IDirect3DDevice8ExtraData>(h->ht).swap(h->ht);
 	}
 	catch (std::exception& e)
 	{
@@ -179,7 +179,7 @@ extern "C" struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(s
 	{
 		try
 		{
-			return h->ht.at(k);
+			return &h->ht.at(k);
 		}
 		catch (std::out_of_range&)
 		{
