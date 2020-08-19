@@ -211,7 +211,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 
 	// store to critical section
 	EnterCriticalSection(&g_CS);
-	IDirect3DDevice8ExtraDataTableInsert(*cs_D3DDev8ExDataTable(), d3ddev8, d3ddev8_exdata);
+	IDirect3DDevice8ExtraDataTableInsert(*cs_D3DDev8ExDataTable(), d3ddev8, d3ddev8_exdata); // XXX TODO error handling
 	LeaveCriticalSection(&g_CS);
 
 	return ret;
@@ -344,7 +344,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	// store to critical section
 	EnterCriticalSection(&g_CS);
-	IDirect3D8ExtraDataTableInsert(*cs_D3D8ExDataTable(), ret, d3d8_exdata);
+	IDirect3D8ExtraDataTableInsert(*cs_D3D8ExDataTable(), ret, d3d8_exdata); // XXX TODO error handling
 	LeaveCriticalSection(&g_CS);
 
 	return ret;
