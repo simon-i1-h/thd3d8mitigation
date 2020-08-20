@@ -57,7 +57,7 @@ struct IDirect3DDevice8ExtraData {
 	IDirect3DDevice8Present_t VanillaPresent;
 	IDirect3DDevice8Release_t VanillaRelease;
 	IDirect3DDevice8Reset_t VanillaReset;
-	D3DPRESENT_PARAMETERS pp; // XXX TODO D3DPRESENT_PARAMETERS*
+	D3DPRESENT_PARAMETERS pp;
 };
 
 // util.c
