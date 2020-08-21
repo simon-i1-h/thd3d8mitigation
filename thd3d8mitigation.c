@@ -8,6 +8,8 @@
 
 #include <tchar.h>
 
+#include <stdbool.h>
+
 // Naming convention:
 //   Thf*: thd3d8mitigation: XXX TODO rename
 //   cs_*: Critical section
@@ -29,24 +31,10 @@
 
 
 static CRITICAL_SECTION g_CS;
-
-struct IDirect3D8ExtraDataTable** cs_D3D8ExDataTable(void)
-{
-	static struct IDirect3D8ExtraDataTable* inner = NULL;
-
-	if (inner == NULL)
-		inner = IDirect3D8ExtraDataTableNew();
-	return &inner;
-}
-
-struct IDirect3DDevice8ExtraDataTable** cs_D3DDev8ExDataTable(void)
-{
-	static struct IDirect3DDevice8ExtraDataTable* inner = NULL;
-
-	if (inner == NULL)
-		inner = IDirect3DDevice8ExtraDataTableNew();
-	return &inner;
-}
+HMODULE g_D3D8Handle;
+Direct3DCreate8_t g_VanillaDirect3DCreate8;
+struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
+struct IDirect3DDevice8ExtraDataTable* g_D3DDev8ExDataTable;
 
 HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
@@ -83,7 +71,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me);
+	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -103,7 +91,7 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me);
+	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -118,8 +106,8 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	{
 		// store to critical section
 		EnterCriticalSection(&g_CS);
-		IDirect3DDevice8ExtraDataTableErase(*cs_D3DDev8ExDataTable(), me);
-		IDirect3DDevice8ExtraDataTableShrinkToFit(*cs_D3DDev8ExDataTable());
+		IDirect3DDevice8ExtraDataTableErase(g_D3DDev8ExDataTable, me);
+		IDirect3DDevice8ExtraDataTableShrinkToFit(g_D3DDev8ExDataTable);
 		LeaveCriticalSection(&g_CS);
 	}
 
@@ -134,7 +122,7 @@ HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARA
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3DDevice8ExtraDataTableGet(*cs_D3DDev8ExDataTable(), me);
+	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -159,7 +147,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3D8ExtraDataTableGet(*cs_D3D8ExDataTable(), me);
+	me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me);
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -191,7 +179,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 
 	// store to critical section
 	EnterCriticalSection(&g_CS);
-	IDirect3DDevice8ExtraDataTableInsert(*cs_D3DDev8ExDataTable(), d3ddev8, d3ddev8_exdata); // XXX TODO error handling
+	IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata); // XXX TODO error handling
 	LeaveCriticalSection(&g_CS);
 
 	return ret;
@@ -205,7 +193,7 @@ ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3D8ExtraDataTableGet(*cs_D3D8ExDataTable(), me);
+	me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me);
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -220,15 +208,15 @@ ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
 	{
 		// store to critical section
 		EnterCriticalSection(&g_CS);
-		IDirect3D8ExtraDataTableErase(*cs_D3D8ExDataTable(), me);
-		IDirect3D8ExtraDataTableShrinkToFit(*cs_D3D8ExDataTable());
+		IDirect3D8ExtraDataTableErase(g_D3D8ExDataTable, me);
+		IDirect3D8ExtraDataTableShrinkToFit(g_D3D8ExDataTable);
 		LeaveCriticalSection(&g_CS);
 	}
 
 	return ret;
 }
 
-void cs_D3D8HandleLazyInit(HMODULE* ret)
+bool InitD3D8Handle(HMODULE* ret)
 {
 	char sysdirpath[MAX_PATH + 1];
 	char* sysdllpath;
@@ -238,69 +226,110 @@ void cs_D3D8HandleLazyInit(HMODULE* ret)
 	if ((len = GetSystemDirectoryA(sysdirpath, sizeof(sysdirpath))) == 0)
 	{
 		ThfError(GetLastError(), "%s: GetSystemDirectoryA failed.", __FUNCTION__);
-		return;
+		return false;
 	}
 
 	if (len > sizeof(sysdirpath))  // XXX TODO review condition
 	{
 		ThfLog("%s: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
-		return;
+		return false;
 	}
 
 	if (myasprintf(&sysdllpath, "%s\\d3d8.dll", sysdirpath) < 0)
 	{
 		ThfLog("%s: myasprintf failed.", __FUNCTION__);
-		return;
+		return false;
 	}
 
 	*ret = LoadLibraryA(sysdllpath);
 	err = GetLastError();
 	free(sysdllpath);
 	if (*ret == NULL)
+	{
 		ThfError(err, "%s: LoadLibraryA failed.", __FUNCTION__);
+		return false;
+	}
+
+	return true;
 }
 
-HMODULE* cs_D3D8Handle(void)
+BOOL InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 {
-	static HMODULE inner = NULL;
-
-	if (inner == NULL)
-		cs_D3D8HandleLazyInit(&inner);
-	return &inner;
-}
-
-void cs_VanillaDirect3DCreate8LazyInit(Direct3DCreate8_t* ret)
-{
-	if (*cs_D3D8Handle() == NULL)
-		return;
-
-	if ((*ret = (Direct3DCreate8_t)GetProcAddress(*cs_D3D8Handle(), "Direct3DCreate8")) == NULL)
+	if ((*ret = (Direct3DCreate8_t)GetProcAddress(D3D8Handle, "Direct3DCreate8")) == NULL)
+	{
 		ThfError(GetLastError(), "%s: LoadFuncFromD3D8 failed.", __FUNCTION__);
+		return false;
+	}
+
+	return true;
 }
 
-Direct3DCreate8_t* cs_VanillaDirect3DCreate8(void)
-{
-	static Direct3DCreate8_t inner = NULL;
+enum InitStatus {
+	INITSTATUS_UNINITED,
+	INITSTATUS_SUCCEEDED,
+	INITSTATUS_FAILED
+};
 
-	if (inner == NULL)
-		cs_VanillaDirect3DCreate8LazyInit(&inner);
-	return &inner;
+// XXX TODO Init専用のクリティカルセクションがあったほうがいいかも
+bool Init(void)
+{
+	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
+
+	// XXX TODO file handle for logging
+
+	EnterCriticalSection(&g_CS);
+
+	switch (g_initstatus)
+	{
+	case INITSTATUS_SUCCEEDED:
+		LeaveCriticalSection(&g_CS);
+		return true;
+	case INITSTATUS_FAILED:
+		LeaveCriticalSection(&g_CS);
+		return false;
+	case INITSTATUS_UNINITED:
+		break;
+	}
+
+	// init
+
+	if (!InitD3D8Handle(&g_D3D8Handle))
+	{
+		LeaveCriticalSection(&g_CS);
+		return false; // XXX TODO logging
+	}
+
+	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
+	{
+		LeaveCriticalSection(&g_CS);
+		return false; // XXX TODO logging
+	}
+
+	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
+	g_D3DDev8ExDataTable = IDirect3DDevice8ExtraDataTableNew();
+
+	LeaveCriticalSection(&g_CS);
+
+	return true;
 }
 
 IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 {
 	IDirect3D8* ret;
-	Direct3DCreate8_t vanillaDirect3DCreate8;
+	Direct3DCreate8_t VanillaDirect3DCreate8;
 	DWORD orig_protect;
 	IDirect3D8Vtbl* vtbl;
 	struct IDirect3D8ExtraData d3d8_exdata;
 
+	if (!Init())
+		return NULL; // XXX TODO logging
+
 	// load from critical section
 	EnterCriticalSection(&g_CS);
-	vanillaDirect3DCreate8 = *cs_VanillaDirect3DCreate8();
+	VanillaDirect3DCreate8 = g_VanillaDirect3DCreate8;
 	LeaveCriticalSection(&g_CS);
 
-	if (vanillaDirect3DCreate8 == NULL || (ret = vanillaDirect3DCreate8(SDKVersion)) == NULL)
+	if ((ret = VanillaDirect3DCreate8(SDKVersion)) == NULL)
 		return NULL; // XXX TODO logging
 
 	// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
@@ -323,7 +352,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	// store to critical section
 	EnterCriticalSection(&g_CS);
-	IDirect3D8ExtraDataTableInsert(*cs_D3D8ExDataTable(), ret, d3d8_exdata); // XXX TODO error handling
+	IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata); // XXX TODO error handling
 	LeaveCriticalSection(&g_CS);
 
 	return ret;
