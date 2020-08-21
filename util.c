@@ -67,7 +67,7 @@ void ThfVLog(const char* fmt, va_list ap)
 		return;
 	}
 
-	if (myasprintf(&msg, "Thread %lu: %s%s\n", GetCurrentThreadId(), THF_LOG_PREFIX, origmsg) < 0)
+	if (myasprintf(&msg, "%sThread %lu: %s\n", THF_LOG_PREFIX, GetCurrentThreadId(), origmsg) < 0)
 	{
 		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");
 		goto cleanup;
@@ -110,7 +110,7 @@ void ThfVError(DWORD err, const char* fmt, va_list ap)
 		goto cleanup;
 	}
 
-	if (myasprintf(&msg, "Thread %lu: %s%s: %s\n", GetCurrentThreadId(), THF_LOG_PREFIX, origmsg, errmsg) < 0)
+	if (myasprintf(&msg, "%sThread %lu: %s: %s\n", THF_LOG_PREFIX, GetCurrentThreadId(), origmsg, errmsg) < 0)
 	{
 		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");
 		goto cleanup;
