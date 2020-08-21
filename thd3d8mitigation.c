@@ -20,10 +20,7 @@
 // XXX TODO 東方と同様にファイルにもロギング
 // XXX TODO review
 // XXX TODO コード整形
-// XXX TODO Windowsのビルド番号を見て機能の有効/無効を自動で切り替えたい
-//   https://docs.microsoft.com/ja-jp/windows/win32/devnotes/rtlgetversion
-//   ↑これをLoadLibrary + GetProcAddressで
-//   引数の型はwindows.hでいいらしい。
+// XXX TODO Direct3D 8の振る舞いを見て機能の有効/無効を自動で切り替えたい
 // XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
 // XXX TODO ログにタグを付ける
 
