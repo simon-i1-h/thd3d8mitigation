@@ -266,6 +266,7 @@ enum InitStatus {
 };
 
 // XXX TODO Init専用のクリティカルセクションがあったほうがいいかも
+// XXX TODO LeaveCriticalSectionをまとめる
 bool Init(void)
 {
 	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
