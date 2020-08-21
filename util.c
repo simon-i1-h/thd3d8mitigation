@@ -77,7 +77,7 @@ cleanup:
 	free(origmsg);
 }
 
-void ThfLog(const char* fmt, ...)
+void LogInfo(const char* fmt, ...)
 {
 	va_list ap;
 
@@ -116,7 +116,7 @@ cleanup:
 	free(errmsg);
 }
 
-void ThfError(DWORD err, const char* fmt, ...)
+void LogError(DWORD err, const char* fmt, ...)
 {
 	va_list ap;
 
@@ -126,7 +126,7 @@ void ThfError(DWORD err, const char* fmt, ...)
 }
 
 // XXX TODO proper exit
-__declspec(noreturn) void ThfFatal(int exitcode, const char* fmt, ...)
+__declspec(noreturn) void LogFatal(int exitcode, const char* fmt, ...)
 {
 	va_list ap;
 

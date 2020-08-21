@@ -25,7 +25,7 @@
 //   ↑これをLoadLibrary + GetProcAddressで
 //   引数の型はwindows.hでいいらしい。
 // XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
-// XXX TODO ログにタグをつけるのと、関数名を変える
+// XXX TODO ログにタグを付ける
 
 
 static CRITICAL_SECTION g_CS;
@@ -42,7 +42,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
-			ThfLog("%s: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			LogInfo("%s: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 		Sleep(0); // XXX TODO SleepEx?
@@ -53,7 +53,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
-			ThfLog("%s: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			LogInfo("%s: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 		Sleep(0); // XXX TODO SleepEx?
@@ -162,7 +162,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 	{
-		ThfError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
 		return E_FAIL;
 	}
 
@@ -173,7 +173,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-		ThfError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
 
 	// store to critical section
 	EnterCriticalSection(&g_CS);
@@ -223,19 +223,19 @@ bool InitD3D8Handle(HMODULE* ret)
 
 	if ((len = GetSystemDirectoryA(sysdirpath, sizeof(sysdirpath))) == 0)
 	{
-		ThfError(GetLastError(), "%s: GetSystemDirectoryA failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: GetSystemDirectoryA failed.", __FUNCTION__);
 		return false;
 	}
 
 	if (len > sizeof(sysdirpath))  // XXX TODO review condition
 	{
-		ThfLog("%s: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
+		LogInfo("%s: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
 		return false;
 	}
 
 	if (myasprintf(&sysdllpath, "%s\\d3d8.dll", sysdirpath) < 0)
 	{
-		ThfLog("%s: myasprintf failed.", __FUNCTION__);
+		LogInfo("%s: myasprintf failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -244,7 +244,7 @@ bool InitD3D8Handle(HMODULE* ret)
 	free(sysdllpath);
 	if (*ret == NULL)
 	{
-		ThfError(err, "%s: LoadLibraryA failed.", __FUNCTION__);
+		LogError(err, "%s: LoadLibraryA failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -255,7 +255,7 @@ BOOL InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 {
 	if ((*ret = (Direct3DCreate8_t)GetProcAddress(D3D8Handle, "Direct3DCreate8")) == NULL)
 	{
-		ThfError(GetLastError(), "%s: LoadFuncFromD3D8 failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: LoadFuncFromD3D8 failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -336,7 +336,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 	{
-		ThfError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
 		return NULL;
 	}
 
@@ -346,7 +346,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-		ThfError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
 
 	// store to critical section
 	EnterCriticalSection(&g_CS);

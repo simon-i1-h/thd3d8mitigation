@@ -67,9 +67,9 @@ struct IDirect3DDevice8ExtraData {
 int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);
 int AllocateErrorMessageA(DWORD, char**);
-void ThfLog(const char*, ...);
-void ThfError(DWORD, const char*, ...);
-__declspec(noreturn) void ThfFatal(int, const char*, ...);
+void LogInfo(const char*, ...);
+void LogError(DWORD, const char*, ...);
+__declspec(noreturn) void LogFatal(int, const char*, ...);
 
 // extradatatable.cpp
 
