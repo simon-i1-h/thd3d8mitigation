@@ -1,4 +1,4 @@
-#include "thd3d8mitigation.h"
+﻿#include "thd3d8mitigation.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -56,7 +56,7 @@ int AllocateErrorMessageA(DWORD code, char** strp)
 	return len;
 }
 
-void ThfVLog(const char* fmt, va_list ap)
+void VLogInfo(const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL;
 	DWORD tmp;
@@ -89,11 +89,11 @@ void LogInfo(const char* fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	ThfVLog(fmt, ap);
+	VLogInfo(fmt, ap);
 	va_end(ap);
 }
 
-void ThfVError(DWORD err, const char* fmt, va_list ap)
+void VLogError(DWORD err, const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL, * errmsg = NULL;
 	DWORD tmp;
@@ -133,7 +133,7 @@ void LogError(DWORD err, const char* fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	ThfVError(err, fmt, ap);
+	VLogError(err, fmt, ap);
 	va_end(ap);
 }
 
@@ -143,7 +143,7 @@ __declspec(noreturn) void LogFatal(int exitcode, const char* fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	ThfVLog(fmt, ap);
+	VLogInfo(fmt, ap);
 	va_end(ap);
 	ExitProcess(exitcode);
 }
