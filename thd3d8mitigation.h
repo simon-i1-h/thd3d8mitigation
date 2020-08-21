@@ -60,9 +60,13 @@ struct IDirect3DDevice8ExtraData {
 	D3DPRESENT_PARAMETERS pp;
 };
 
+CRITICAL_SECTION g_CS;
+
 // util.c
 
 #define THF_LOG_PREFIX "[thd3d8mitigation]"
+
+HANDLE g_LogFile;
 
 int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);

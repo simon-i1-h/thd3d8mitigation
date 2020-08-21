@@ -17,7 +17,6 @@
 //   *_t: Type identifier
 
 // XXX TODO error handling
-// XXX TODO 東方と同様にファイルにもロギング
 // XXX TODO review
 // XXX TODO コード整形
 // XXX TODO Direct3D 8の振る舞いを見て機能の有効/無効を自動で切り替えたい
@@ -25,7 +24,6 @@
 // XXX TODO ログにタグを付ける
 
 
-static CRITICAL_SECTION g_CS;
 HMODULE g_D3D8Handle;
 Direct3DCreate8_t g_VanillaDirect3DCreate8;
 struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
@@ -271,8 +269,6 @@ bool Init(void)
 {
 	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
 
-	// XXX TODO file handle for logging
-
 	EnterCriticalSection(&g_CS);
 
 	switch (g_initstatus)
@@ -309,6 +305,75 @@ bool Init(void)
 	return true;
 }
 
+// いずれかのLog*関数を使う前にこの関数を呼ぶこと
+// XXX TODO LeaveCriticalSectionをまとめる
+bool LogInit(void)
+{
+	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
+
+	char exepath[MAX_PATH + 1];
+	char exedrivepath[_MAX_DRIVE + 1];
+	char exedirpath[_MAX_DIR + 1];
+	char* logpath;
+	DWORD err;
+
+	EnterCriticalSection(&g_CS);
+
+	switch (g_initstatus)
+	{
+	case INITSTATUS_SUCCEEDED:
+		LeaveCriticalSection(&g_CS);
+		return true;
+	case INITSTATUS_FAILED:
+		LeaveCriticalSection(&g_CS);
+		return false;
+	case INITSTATUS_UNINITED:
+		break;
+	}
+
+	// init
+
+	if (GetModuleFileNameA(NULL, exepath, sizeof(exepath)) == 0)
+	{
+		g_initstatus = INITSTATUS_FAILED;
+		LeaveCriticalSection(&g_CS);
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": GetModuleFileNameA failed.\n");  // XXX TODO logging
+		return false;
+	}
+
+	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
+	{
+		g_initstatus = INITSTATUS_FAILED;
+		LeaveCriticalSection(&g_CS);
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": _splitpath_s failed.\n");  // XXX TODO logging
+		return false;
+	}
+
+	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
+	{
+		g_initstatus = INITSTATUS_FAILED;
+		LeaveCriticalSection(&g_CS);
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");  // XXX TODO logging
+		return false;
+	}
+
+	OutputDebugStringA(logpath);
+	g_LogFile = CreateFileA(logpath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	err = GetLastError();
+	free(logpath);
+	if (g_LogFile == INVALID_HANDLE_VALUE)
+	{
+		g_initstatus = INITSTATUS_FAILED;
+		LeaveCriticalSection(&g_CS);
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": CreateFileA failed.\n");  // XXX TODO logging
+		return false;
+	}
+
+	g_initstatus = INITSTATUS_SUCCEEDED;
+	LeaveCriticalSection(&g_CS);
+	return true;
+}
+
 IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 {
 	IDirect3D8* ret;
@@ -317,8 +382,20 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	IDirect3D8Vtbl* vtbl;
 	struct IDirect3D8ExtraData d3d8_exdata;
 
+	// init
+
+	if (!LogInit())
+	{
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": log initialization failed.\n");
+		return NULL;
+	}
+	// これ以降はログを使うことができる
+
 	if (!Init())
-		return NULL; // XXX TODO logging
+	{
+		LogInfo("%s: initialization failed.", __FUNCTION__);
+		return NULL;
+	}
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);

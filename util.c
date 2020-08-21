@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+// ログの初期化で使うため、この関数からログ関数を呼び出してはいけない
 int myvasprintf(char** strp, const char* fmt, va_list ap)
 {
 	va_list ap2;
@@ -30,6 +31,7 @@ int myvasprintf(char** strp, const char* fmt, va_list ap)
 	return len;
 }
 
+// ログの初期化で使うため、この関数からログ関数を呼び出してはいけない
 int myasprintf(char** strp, const char* fmt, ...)
 {
 	va_list ap;
@@ -57,6 +59,7 @@ int AllocateErrorMessageA(DWORD code, char** strp)
 void ThfVLog(const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL;
+	DWORD tmp;
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
 	{
@@ -71,6 +74,10 @@ void ThfVLog(const char* fmt, va_list ap)
 	}
 
 	OutputDebugStringA(msg);
+	EnterCriticalSection(&g_CS);
+	if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": WriteFile failed.\n");
+	LeaveCriticalSection(&g_CS);
 
 cleanup:
 	free(msg);
@@ -89,6 +96,7 @@ void LogInfo(const char* fmt, ...)
 void ThfVError(DWORD err, const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL, * errmsg = NULL;
+	DWORD tmp;
 
 	if (AllocateErrorMessageA(err, &errmsg) < 0)
 	{
@@ -109,6 +117,10 @@ void ThfVError(DWORD err, const char* fmt, va_list ap)
 	}
 
 	OutputDebugStringA(msg);
+	EnterCriticalSection(&g_CS);
+	if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
+		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": WriteFile failed.\n");
+	LeaveCriticalSection(&g_CS);
 
 cleanup:
 	free(msg);
