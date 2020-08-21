@@ -391,6 +391,8 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	}
 	// これ以降はログを使うことができる
 
+	LogInfo("%s: Version: %s", __FUNCTION__, THF_VERSION);
+
 	if (!Init())
 	{
 		LogInfo("%s: initialization failed.", __FUNCTION__);
