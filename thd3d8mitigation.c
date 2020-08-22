@@ -23,6 +23,11 @@
 // XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
 // XXX TODO ログにタグを付ける
 
+enum InitStatus {
+	INITSTATUS_UNINITED,
+	INITSTATUS_SUCCEEDED,
+	INITSTATUS_FAILED
+};
 
 HMODULE g_D3D8Handle;
 Direct3DCreate8_t g_VanillaDirect3DCreate8;
@@ -252,12 +257,6 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 	return ret;
 }
-
-enum InitStatus {
-	INITSTATUS_UNINITED,
-	INITSTATUS_SUCCEEDED,
-	INITSTATUS_FAILED
-};
 
 bool InitD3D8Handle(HMODULE* ret)
 {
