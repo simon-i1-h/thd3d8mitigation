@@ -439,7 +439,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	}
 	// これ以降はログを使うことができる
 
-	LogInfo("%s: Version: %s", __FUNCTION__, THF_VERSION);
+	LogInfo("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
 
 	if (!Init())
 	{
@@ -463,7 +463,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	case DLL_PROCESS_ATTACH:
 	{
 		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#general-best-practices
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Version: " THF_VERSION "\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Version: " PROGRAM_VERSION "\n");
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\n");
 		InitializeCriticalSection(&g_CS);
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\n");

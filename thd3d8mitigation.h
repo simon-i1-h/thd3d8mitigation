@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#define THF_VERSION "0.1"
+#define PROGRAM_VERSION "0.1"
 
 // thd3d8mitigation.c
 
