@@ -29,10 +29,12 @@ enum InitStatus {
 	INITSTATUS_FAILED
 };
 
-HMODULE g_D3D8Handle;
-Direct3DCreate8_t g_VanillaDirect3DCreate8;
-struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
-struct IDirect3DDevice8ExtraDataTable* g_D3DDev8ExDataTable;
+CRITICAL_SECTION g_CS;
+
+static HMODULE g_D3D8Handle;
+static Direct3DCreate8_t g_VanillaDirect3DCreate8;
+static struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
+static struct IDirect3DDevice8ExtraDataTable* g_D3DDev8ExDataTable;
 
 HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {

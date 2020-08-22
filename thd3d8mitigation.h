@@ -60,7 +60,7 @@ struct IDirect3DDevice8ExtraData {
 	D3DPRESENT_PARAMETERS pp;
 };
 
-CRITICAL_SECTION g_CS;
+extern CRITICAL_SECTION g_CS;
 
 // util.c
 
