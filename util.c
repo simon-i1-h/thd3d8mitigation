@@ -93,7 +93,7 @@ void Log(const char* fmt, ...)
 	va_end(ap);
 }
 
-void VLogError(DWORD err, const char* fmt, va_list ap)
+void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL, * errmsg = NULL;
 	DWORD tmp;
@@ -133,7 +133,7 @@ void LogWithErrorCode(DWORD err, const char* fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	VLogError(err, fmt, ap);
+	VLogWithErrorCode(err, fmt, ap);
 	va_end(ap);
 }
 
