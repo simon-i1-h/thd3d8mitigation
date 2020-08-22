@@ -94,16 +94,11 @@ ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
 	{
-		Log("%s: error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
-		return 0; // XXX TODO return value
+		Log("%s: warning: IDirect3DDevice8ExtraDataTableGet failed. Resource is leaking.", __FUNCTION__);
+		return 0;
 	}
 
-	ret = me_exdata->VanillaRelease(me);
-
-	// XXX TODO 解放されたかどうかはほかの方法で検出したほうがいいかも。その場合、Releaseのhookは適切ではないかもしれない。
-	// https://docs.microsoft.com/en-us/previous-versions/windows/embedded/ms890669(v=msdn.10)?redirectedfrom=MSDN
-	// https://docs.microsoft.com/ja-jp/windows/win32/api/unknwn/nf-unknwn-iunknown-release
-	if (ret == 0)
+	if ((ret = me_exdata->VanillaRelease(me)) == 0)
 	{
 		IDirect3DDevice8ExtraDataTableErase(g_D3DDev8ExDataTable, me);
 		IDirect3DDevice8ExtraDataTableShrinkToFit(g_D3DDev8ExDataTable);
@@ -131,7 +126,7 @@ HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMET
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
 	{
 		Log("%s: error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
-		return E_FAIL; // XXX FIXME error handling
+		return E_FAIL;
 	}
 
 	ret = me_exdata->VanillaReset(me, pPresentationParameters);
@@ -214,16 +209,11 @@ ULONG __stdcall cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
 	{
-		Log("%s: error: IDirect3D8ExtraDataTableGet failed.", __FUNCTION__);
-		return 0; // XXX FIXME error handling
+		Log("%s: warning: IDirect3D8ExtraDataTableGet failed. Resource is leaking.", __FUNCTION__);
+		return 0;
 	}
 
-	ret = me_exdata->VanillaRelease(me);
-
-	// XXX TODO 解放されたかどうかはほかの方法で検出したほうがいいかも。その場合、Releaseのhookは適切ではないかもしれない。
-	// https://docs.microsoft.com/en-us/previous-versions/windows/embedded/ms890669(v=msdn.10)?redirectedfrom=MSDN
-	// https://docs.microsoft.com/ja-jp/windows/win32/api/unknwn/nf-unknwn-iunknown-release
-	if (ret == 0)
+	if ((ret = me_exdata->VanillaRelease(me)) == 0)
 	{
 		IDirect3D8ExtraDataTableErase(g_D3D8ExDataTable, me);
 		IDirect3D8ExtraDataTableShrinkToFit(g_D3D8ExDataTable);
