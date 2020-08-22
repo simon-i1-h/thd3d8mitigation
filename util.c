@@ -110,7 +110,7 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 		goto cleanup;
 	}
 
-	if (myasprintf(&msg, "%sThread %lu: %s: %s\n", LOG_PREFIX, GetCurrentThreadId(), origmsg, errmsg) < 0)
+	if (myasprintf(&msg, "%sThread %lu: %s: error code: 0x%lx (%s)\n", LOG_PREFIX, GetCurrentThreadId(), origmsg, err, errmsg) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
 		goto cleanup;
