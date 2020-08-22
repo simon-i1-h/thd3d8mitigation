@@ -11,10 +11,10 @@
 #include <stdbool.h>
 
 // Naming convention:
-//   Thf*: thd3d8mitigation: XXX TODO rename
 //   cs_*: Critical section
 //   g_*: Global variable
 //   *_t: Type identifier
+//   Mod*: Modified
 
 // XXX TODO error handling
 // XXX TODO review
