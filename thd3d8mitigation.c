@@ -271,9 +271,9 @@ bool InitD3D8Handle(HMODULE* ret)
 		return false;
 	}
 
-	if (len > sizeof(sysdirpath))  // XXX TODO review condition
+	if (len >= sizeof(sysdirpath))
 	{
-		Log("%s: error: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
+		LogWithErrorCode(ERROR_INSUFFICIENT_BUFFER, "%s: error: GetSystemDirectoryA failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -312,23 +312,30 @@ bool cs_LogInitImpl(void)
 	char exedrivepath[_MAX_DRIVE + 1];
 	char exedirpath[_MAX_DIR + 1];
 	char* logpath;
-	DWORD err;
+	DWORD err, len;
 
-	if (GetModuleFileNameA(NULL, exepath, sizeof(exepath)) == 0)
+	if ((len = GetModuleFileNameA(NULL, exepath, sizeof(exepath))) == 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: GetModuleFileNameA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
+	if (len >= sizeof(exepath))
+	{
+		// ERROR_INSUFFICIENT_BUFFER
+		OutputDebugStringA("%s: error: GetSystemDirectoryA failed.", __FUNCTION__);  // XXX TODO logging
+		return false;
+	}
+
 	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: _splitpath_s failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: _splitpath_s failed.\n");
 		return false;
 	}
 
 	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: myasprintf failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: myasprintf failed.\n");
 		return false;
 	}
 
