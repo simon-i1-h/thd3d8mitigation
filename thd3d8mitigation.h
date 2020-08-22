@@ -64,7 +64,7 @@ CRITICAL_SECTION g_CS;
 
 // util.c
 
-#define THF_LOG_PREFIX "[thd3d8mitigation]"
+#define LOG_PREFIX "[thd3d8mitigation]"
 
 HANDLE g_LogFile;
 

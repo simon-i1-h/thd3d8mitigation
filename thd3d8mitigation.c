@@ -337,7 +337,7 @@ bool LogInit(void)
 	{
 		g_initstatus = INITSTATUS_FAILED;
 		LeaveCriticalSection(&g_CS);
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": GetModuleFileNameA failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": GetModuleFileNameA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
@@ -345,7 +345,7 @@ bool LogInit(void)
 	{
 		g_initstatus = INITSTATUS_FAILED;
 		LeaveCriticalSection(&g_CS);
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": _splitpath_s failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": _splitpath_s failed.\n");  // XXX TODO logging
 		return false;
 	}
 
@@ -353,7 +353,7 @@ bool LogInit(void)
 	{
 		g_initstatus = INITSTATUS_FAILED;
 		LeaveCriticalSection(&g_CS);
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");  // XXX TODO logging
 		return false;
 	}
 
@@ -365,7 +365,7 @@ bool LogInit(void)
 	{
 		g_initstatus = INITSTATUS_FAILED;
 		LeaveCriticalSection(&g_CS);
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": CreateFileA failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": CreateFileA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
@@ -386,7 +386,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	if (!LogInit())
 	{
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": log initialization failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": log initialization failed.\n");
 		return NULL;
 	}
 	// これ以降はログを使うことができる
@@ -440,10 +440,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	case DLL_PROCESS_ATTACH:
 	{
 		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#general-best-practices
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": Version: " THF_VERSION "\n");
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Version: " THF_VERSION "\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\n");
 		InitializeCriticalSection(&g_CS);
-		OutputDebugStringA(THF_LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\n");
 		break;
 	}
 	case DLL_PROCESS_DETACH:
