@@ -15,7 +15,6 @@
 //   Mod*: Modified
 //   V*: Function with va_list
 
-// XXX TODO error handling
 // XXX TODO review
 // XXX TODO コード整形
 // XXX TODO Direct3D 8の振る舞いを見て機能の有効/無効を自動で切り替えたい
