@@ -419,7 +419,7 @@ bool Init(void)
 	bool ret;
 
 	EnterCriticalSection(&g_CS);
-	ret = cs_InitImpl();
+	ret = cs_Init();
 	LeaveCriticalSection(&g_CS);
 	return ret;
 }
