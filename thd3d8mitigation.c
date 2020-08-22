@@ -292,17 +292,20 @@ bool cs_Init(void)
 
 	if (!InitD3D8Handle(&g_D3D8Handle))
 	{
+		g_initstatus = INITSTATUS_FAILED;
 		return false; // XXX TODO logging
 	}
 
 	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
 	{
+		g_initstatus = INITSTATUS_FAILED;
 		return false; // XXX TODO logging
 	}
 
 	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
 	g_D3DDev8ExDataTable = IDirect3DDevice8ExtraDataTableNew();
 
+	g_initstatus = INITSTATUS_SUCCEEDED;
 	return true;
 }
 
