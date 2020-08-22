@@ -21,7 +21,6 @@
 // XXX TODO コード整形
 // XXX TODO Direct3D 8の振る舞いを見て機能の有効/無効を自動で切り替えたい
 // XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
-// XXX TODO ログにタグを付ける
 
 enum InitStatus {
 	INITSTATUS_UNINITED,
@@ -42,7 +41,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
-			LogInfo("%s: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			LogInfo("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 		Sleep(0); // XXX TODO SleepEx?
@@ -53,7 +52,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
-			LogInfo("%s: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			LogInfo("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 		Sleep(0); // XXX TODO SleepEx?
@@ -164,7 +163,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 	{
-		LogError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: error: VirtualProtect (PAGE_READWRITE) failed", __FUNCTION__);
 		return E_FAIL;
 	}
 
@@ -175,7 +174,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
 
 	IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata); // XXX TODO error handling
 
@@ -241,7 +240,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 	{
-		LogError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: error: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
 		return NULL;
 	}
 
@@ -251,7 +250,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
 
 	IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata); // XXX TODO error handling
 
@@ -267,19 +266,19 @@ bool InitD3D8Handle(HMODULE* ret)
 
 	if ((len = GetSystemDirectoryA(sysdirpath, sizeof(sysdirpath))) == 0)
 	{
-		LogError(GetLastError(), "%s: GetSystemDirectoryA failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: error: GetSystemDirectoryA failed.", __FUNCTION__);
 		return false;
 	}
 
 	if (len > sizeof(sysdirpath))  // XXX TODO review condition
 	{
-		LogInfo("%s: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
+		LogInfo("%s: error: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
 		return false;
 	}
 
 	if (myasprintf(&sysdllpath, "%s\\d3d8.dll", sysdirpath) < 0)
 	{
-		LogInfo("%s: myasprintf failed.", __FUNCTION__);
+		LogInfo("%s: error: myasprintf failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -288,7 +287,7 @@ bool InitD3D8Handle(HMODULE* ret)
 	free(sysdllpath);
 	if (*ret == NULL)
 	{
-		LogError(err, "%s: LoadLibraryA failed.", __FUNCTION__);
+		LogError(err, "%s: error: LoadLibraryA failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -299,7 +298,7 @@ bool InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 {
 	if ((*ret = (Direct3DCreate8_t)GetProcAddress(D3D8Handle, "Direct3DCreate8")) == NULL)
 	{
-		LogError(GetLastError(), "%s: LoadFuncFromD3D8 failed.", __FUNCTION__);
+		LogError(GetLastError(), "%s: error: LoadFuncFromD3D8 failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -316,19 +315,19 @@ bool cs_LogInitImpl(void)
 
 	if (GetModuleFileNameA(NULL, exepath, sizeof(exepath)) == 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": GetModuleFileNameA failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: GetModuleFileNameA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
 	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": _splitpath_s failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: _splitpath_s failed.\n");  // XXX TODO logging
 		return false;
 	}
 
 	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: myasprintf failed.\n");  // XXX TODO logging
 		return false;
 	}
 
@@ -338,7 +337,7 @@ bool cs_LogInitImpl(void)
 	free(logpath);
 	if (g_LogFile == INVALID_HANDLE_VALUE)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": CreateFileA failed.\n");  // XXX TODO logging
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: CreateFileA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
@@ -379,14 +378,14 @@ bool cs_InitImpl(void)
 {
 	if (!InitD3D8Handle(&g_D3D8Handle))
 	{
-		LogInfo("%s: InitD3D8Handle failed.", __FUNCTION__);
-		return false; // XXX TODO logging
+		LogInfo("%s: error: InitD3D8Handle failed.", __FUNCTION__);
+		return false;
 	}
 
 	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
 	{
-		LogInfo("%s: InitVanillaDirect3DCreate8 failed.", __FUNCTION__);
-		return false; // XXX TODO logging
+		LogInfo("%s: error: InitVanillaDirect3DCreate8 failed.", __FUNCTION__);
+		return false;
 	}
 
 	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
@@ -432,7 +431,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	if (!LogInit())
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": log initialization failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: log initialization failed.\n");
 		return NULL;
 	}
 	// これ以降はログを使うことができる
@@ -441,7 +440,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	if (!Init())
 	{
-		LogInfo("%s: initialization failed.", __FUNCTION__);
+		LogInfo("%s: error: initialization failed.", __FUNCTION__);
 		return NULL;
 	}
 

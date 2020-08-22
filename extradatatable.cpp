@@ -28,11 +28,11 @@ extern "C" struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void)
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -44,11 +44,11 @@ extern "C" int IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -60,11 +60,11 @@ extern "C" void IDirect3D8ExtraDataTableErase(struct IDirect3D8ExtraDataTable* h
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -77,11 +77,11 @@ extern "C" void IDirect3D8ExtraDataTableShrinkToFit(struct IDirect3D8ExtraDataTa
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -100,11 +100,11 @@ extern "C" struct IDirect3D8ExtraData* IDirect3D8ExtraDataTableGet(struct IDirec
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -116,11 +116,11 @@ extern "C" struct IDirect3DDevice8ExtraDataTable* IDirect3DDevice8ExtraDataTable
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -132,11 +132,11 @@ extern "C" int IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8Extra
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -148,11 +148,11 @@ extern "C" void IDirect3DDevice8ExtraDataTableErase(struct IDirect3DDevice8Extra
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -165,11 +165,11 @@ extern "C" void IDirect3DDevice8ExtraDataTableShrinkToFit(struct IDirect3DDevice
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }
 
@@ -188,10 +188,10 @@ extern "C" struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(s
 	}
 	catch (std::exception& e)
 	{
-		LogFatal(1, "%s: unexpected exception (%s).", __FUNCTION__, e.what());
+		LogFatal(1, "%s: fatal: unexpected exception (%s).", __FUNCTION__, e.what());
 	}
 	catch (...)
 	{
-		LogFatal(1, "%s: unexpected exception (unknown).", __FUNCTION__);
+		LogFatal(1, "%s: fatal: unexpected exception (unknown).", __FUNCTION__);
 	}
 }

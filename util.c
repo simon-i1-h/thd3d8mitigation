@@ -63,20 +63,20 @@ void VLogInfo(const char* fmt, va_list ap)
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myvasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myvasprintf failed.\n");
 		return;
 	}
 
 	if (myasprintf(&msg, "%sThread %lu: %s\n", LOG_PREFIX, GetCurrentThreadId(), origmsg) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
 		goto cleanup;
 	}
 
 	OutputDebugStringA(msg);
 	EnterCriticalSection(&g_CS);
 	if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": WriteFile failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
 	LeaveCriticalSection(&g_CS);
 
 cleanup:
@@ -100,26 +100,26 @@ void VLogError(DWORD err, const char* fmt, va_list ap)
 
 	if (AllocateErrorMessageA(err, &errmsg) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": AllocateErrorMessage failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: AllocateErrorMessage failed.\n");
 		return;
 	}
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myvasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myvasprintf failed.\n");
 		goto cleanup;
 	}
 
 	if (myasprintf(&msg, "%sThread %lu: %s: %s\n", LOG_PREFIX, GetCurrentThreadId(), origmsg, errmsg) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
 		goto cleanup;
 	}
 
 	OutputDebugStringA(msg);
 	EnterCriticalSection(&g_CS);
 	if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": WriteFile failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
 	LeaveCriticalSection(&g_CS);
 
 cleanup:
