@@ -6,8 +6,6 @@
 #define CINTERFACE
 #include <d3d8.h>
 
-#include <tchar.h>
-
 // Naming convention:
 //   cs_*: Critical section
 //   g_*: Global variable
