@@ -358,10 +358,15 @@ bool cs_LogInit(void)
 	case INITSTATUS_FAILED:
 		return false;
 	case INITSTATUS_UNINITED:
-		ret = cs_LogInitImpl();
-		g_initstatus = ret ? INITSTATUS_SUCCEEDED : INITSTATUS_FAILED;
-		return ret;
+		break;
+	default:
+		Log("%s: error: unreachable.", __FUNCTION__);
+		return false;
 	}
+
+	ret = cs_LogInitImpl();
+	g_initstatus = ret ? INITSTATUS_SUCCEEDED : INITSTATUS_FAILED;
+	return ret;
 }
 
 // いずれかのLog*関数を使う前にこの関数を呼ぶこと
@@ -408,10 +413,15 @@ bool cs_Init(void)
 	case INITSTATUS_FAILED:
 		return false;
 	case INITSTATUS_UNINITED:
-		ret = cs_InitImpl();
-		g_initstatus = ret ? INITSTATUS_SUCCEEDED : INITSTATUS_FAILED;
-		return ret;
+		break;
+	default:
+		Log("%s: error: unreachable.", __FUNCTION__);
+		return false;
 	}
+
+	ret = cs_InitImpl();
+	g_initstatus = ret ? INITSTATUS_SUCCEEDED : INITSTATUS_FAILED;
+	return ret;
 }
 
 bool Init(void)
