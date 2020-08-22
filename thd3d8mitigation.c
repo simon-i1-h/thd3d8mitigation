@@ -220,6 +220,45 @@ ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
 	return ret;
 }
 
+IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
+{
+	IDirect3D8* ret;
+	DWORD orig_protect;
+	IDirect3D8Vtbl* vtbl;
+	struct IDirect3D8ExtraData d3d8_exdata;
+
+	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
+		return NULL; // XXX TODO logging
+
+	// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
+
+	vtbl = ret->lpVtbl;
+
+	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
+	{
+		LogError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
+		return NULL;
+	}
+
+	d3d8_exdata = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release };
+	vtbl->CreateDevice = ModIDirect3D8CreateDevice;
+	vtbl->Release = ModIDirect3D8Release;
+
+	// best effort
+	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
+		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
+
+	IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata); // XXX TODO error handling
+
+	return ret;
+}
+
+enum InitStatus {
+	INITSTATUS_UNINITED,
+	INITSTATUS_SUCCEEDED,
+	INITSTATUS_FAILED
+};
+
 bool InitD3D8Handle(HMODULE* ret)
 {
 	char sysdirpath[MAX_PATH + 1];
@@ -268,87 +307,28 @@ bool InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 	return true;
 }
 
-enum InitStatus {
-	INITSTATUS_UNINITED,
-	INITSTATUS_SUCCEEDED,
-	INITSTATUS_FAILED
-};
-
-bool cs_Init(void)
+bool cs_LogInitImpl(void)
 {
-	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
-
-	switch (g_initstatus)
-	{
-	case INITSTATUS_SUCCEEDED:
-		return true;
-	case INITSTATUS_FAILED:
-		return false;
-	case INITSTATUS_UNINITED:
-		break;
-	}
-
-	// init
-
-	if (!InitD3D8Handle(&g_D3D8Handle))
-	{
-		g_initstatus = INITSTATUS_FAILED;
-		return false; // XXX TODO logging
-	}
-
-	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
-	{
-		g_initstatus = INITSTATUS_FAILED;
-		return false; // XXX TODO logging
-	}
-
-	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
-	g_D3DDev8ExDataTable = IDirect3DDevice8ExtraDataTableNew();
-
-	g_initstatus = INITSTATUS_SUCCEEDED;
-	return true;
-}
-
-// いずれかのLog*関数を使う前にこの関数を呼ぶこと
-bool cs_LogInit(void)
-{
-	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
-
 	char exepath[MAX_PATH + 1];
 	char exedrivepath[_MAX_DRIVE + 1];
 	char exedirpath[_MAX_DIR + 1];
 	char* logpath;
 	DWORD err;
 
-	switch (g_initstatus)
-	{
-	case INITSTATUS_SUCCEEDED:
-		return true;
-	case INITSTATUS_FAILED:
-		return false;
-	case INITSTATUS_UNINITED:
-		break;
-	}
-
-	// init
-
 	if (GetModuleFileNameA(NULL, exepath, sizeof(exepath)) == 0)
 	{
-		g_initstatus = INITSTATUS_FAILED;
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": GetModuleFileNameA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
 	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
 	{
-		g_initstatus = INITSTATUS_FAILED;
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": _splitpath_s failed.\n");  // XXX TODO logging
 		return false;
 	}
 
 	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
 	{
-		g_initstatus = INITSTATUS_FAILED;
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");  // XXX TODO logging
 		return false;
 	}
@@ -359,25 +339,100 @@ bool cs_LogInit(void)
 	free(logpath);
 	if (g_LogFile == INVALID_HANDLE_VALUE)
 	{
-		g_initstatus = INITSTATUS_FAILED;
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": CreateFileA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
-	g_initstatus = INITSTATUS_SUCCEEDED;
 	return true;
 }
 
-IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
+bool cs_LogInit(void)
+{
+	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
+
+	bool ret;
+
+	switch (g_initstatus)
+	{
+	case INITSTATUS_SUCCEEDED:
+		return true;
+	case INITSTATUS_FAILED:
+		return false;
+	case INITSTATUS_UNINITED:
+		ret = cs_LogInitImpl();
+		g_initstatus = ret ? INITSTATUS_SUCCEEDED : INITSTATUS_FAILED;
+		return ret;
+	}
+}
+
+// いずれかのLog*関数を使う前にこの関数を呼ぶこと
+bool LogInit(void)
+{
+	bool ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_LogInit();
+	LeaveCriticalSection(&g_CS);
+	return ret;
+}
+
+bool cs_InitImpl(void)
+{
+	if (!InitD3D8Handle(&g_D3D8Handle))
+	{
+		LogInfo("%s: InitD3D8Handle failed.", __FUNCTION__);
+		return false; // XXX TODO logging
+	}
+
+	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
+	{
+		LogInfo("%s: InitVanillaDirect3DCreate8 failed.", __FUNCTION__);
+		return false; // XXX TODO logging
+	}
+
+	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
+	g_D3DDev8ExDataTable = IDirect3DDevice8ExtraDataTableNew();
+
+	return true;
+}
+
+bool cs_Init(void)
+{
+	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
+
+	bool ret;
+
+	switch (g_initstatus)
+	{
+	case INITSTATUS_SUCCEEDED:
+		return true;
+	case INITSTATUS_FAILED:
+		return false;
+	case INITSTATUS_UNINITED:
+		ret = cs_InitImpl();
+		g_initstatus = ret ? INITSTATUS_SUCCEEDED : INITSTATUS_FAILED;
+		return ret;
+	}
+}
+
+bool Init(void)
+{
+	bool ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_InitImpl();
+	LeaveCriticalSection(&g_CS);
+	return ret;
+}
+
+// 実質的なエントリーポイントなので、最初は初期化処理を行う
+IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 {
 	IDirect3D8* ret;
-	DWORD orig_protect;
-	IDirect3D8Vtbl* vtbl;
-	struct IDirect3D8ExtraData d3d8_exdata;
 
 	// init
 
-	if (!cs_LogInit())
+	if (!LogInit())
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": log initialization failed.\n");
 		return NULL;
@@ -386,41 +441,13 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 	LogInfo("%s: Version: %s", __FUNCTION__, THF_VERSION);
 
-	if (!cs_Init())
+	if (!Init())
 	{
 		LogInfo("%s: initialization failed.", __FUNCTION__);
 		return NULL;
 	}
 
-	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
-		return NULL; // XXX TODO logging
-
-	// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
-
-	vtbl = ret->lpVtbl;
-
-	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
-	{
-		LogError(GetLastError(), "%s: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
-		return NULL;
-	}
-
-	d3d8_exdata = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release };
-	vtbl->CreateDevice = ModIDirect3D8CreateDevice;
-	vtbl->Release = ModIDirect3D8Release;
-
-	// best effort
-	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
-
-	IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata); // XXX TODO error handling
-
-	return ret;
-}
-
-IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
-{
-	IDirect3D8* ret;
+	// body
 
 	EnterCriticalSection(&g_CS);
 	ret = cs_ModDirect3DCreate8Impl(SDKVersion);
