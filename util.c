@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+// XXX TODO Logをlog.cに分離するかも。その場合、LogInitもそちらの移す。
+
 HANDLE g_LogFile = NULL;
 
 int myvasprintf(char** strp, const char* fmt, va_list ap)
