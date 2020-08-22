@@ -3,6 +3,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include <mmsystem.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -59,7 +61,7 @@ int AllocateErrorMessageA(DWORD code, char** strp)
 void VLog(const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL;
-	DWORD tmp;
+	DWORD tmp, now;
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
 	{
@@ -67,7 +69,11 @@ void VLog(const char* fmt, va_list ap)
 		return;
 	}
 
-	if (myasprintf(&msg, "%sThread %lu: %s\n", LOG_PREFIX, GetCurrentThreadId(), origmsg) < 0)
+	timeBeginPeriod(1);
+	now = timeGetTime();
+	timeEndPeriod(1);
+
+	if (myasprintf(&msg, "%s[System time: %010lu][Thread: %010lu]: %s\n", LOG_PREFIX, now, GetCurrentThreadId(), origmsg) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
 		goto cleanup;
@@ -97,7 +103,7 @@ void Log(const char* fmt, ...)
 void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL, * errmsg = NULL;
-	DWORD tmp;
+	DWORD tmp, now;
 
 	if (AllocateErrorMessageA(err, &errmsg) < 0)
 	{
@@ -111,7 +117,11 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 		goto cleanup;
 	}
 
-	if (myasprintf(&msg, "%sThread %lu: %s: error code: 0x%lx (%s)\n", LOG_PREFIX, GetCurrentThreadId(), origmsg, err, errmsg) < 0)
+	timeBeginPeriod(1);
+	now = timeGetTime();
+	timeEndPeriod(1);
+
+	if (myasprintf(&msg, "%s System time [%10lu]: Thread [%10lu]: %s: error code: 0x%lx (%s)\n", LOG_PREFIX, now, GetCurrentThreadId(), origmsg, err, errmsg) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
 		goto cleanup;
