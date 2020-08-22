@@ -36,11 +36,11 @@ extern "C" struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void)
 	}
 }
 
-extern "C" int IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h, IDirect3D8* k, struct IDirect3D8ExtraData v)
+extern "C" BOOL IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h, IDirect3D8* k, struct IDirect3D8ExtraData v)
 {
 	try
 	{
-		return h->ht.insert(d3d8pair{ k, v }).second ? 0 : 1;
+		return h->ht.insert(d3d8pair{ k, v }).second;
 	}
 	catch (std::exception& e)
 	{
@@ -124,11 +124,11 @@ extern "C" struct IDirect3DDevice8ExtraDataTable* IDirect3DDevice8ExtraDataTable
 	}
 }
 
-extern "C" int IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k, struct IDirect3DDevice8ExtraData v)
+extern "C" BOOL IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k, struct IDirect3DDevice8ExtraData v)
 {
 	try
 	{
-		return h->ht.insert(d3ddevice8pair{ k, v }).second ? 0 : 1;
+		return h->ht.insert(d3ddevice8pair{ k, v }).second;
 	}
 	catch (std::exception& e)
 	{

@@ -8,8 +8,6 @@
 
 #include <tchar.h>
 
-#include <stdbool.h>
-
 // Naming convention:
 //   cs_*: Critical section
 //   g_*: Global variable
@@ -268,7 +266,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	return ret;
 }
 
-bool InitD3D8Handle(HMODULE* ret)
+BOOL InitD3D8Handle(HMODULE* ret)
 {
 	char sysdirpath[MAX_PATH + 1];
 	char* sysdllpath;
@@ -278,19 +276,19 @@ bool InitD3D8Handle(HMODULE* ret)
 	if ((len = GetSystemDirectoryA(sysdirpath, sizeof(sysdirpath))) == 0)
 	{
 		LogWithErrorCode(GetLastError(), "%s: error: GetSystemDirectoryA failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	if (len >= sizeof(sysdirpath))
 	{
 		LogWithErrorCode(ERROR_INSUFFICIENT_BUFFER, "%s: error: GetSystemDirectoryA failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	if (myasprintf(&sysdllpath, "%s\\d3d8.dll", sysdirpath) < 0)
 	{
 		Log("%s: error: myasprintf failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	*ret = LoadLibraryA(sysdllpath);
@@ -299,24 +297,24 @@ bool InitD3D8Handle(HMODULE* ret)
 	if (*ret == NULL)
 	{
 		LogWithErrorCode(err, "%s: error: LoadLibraryA failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
-	return true;
+	return TRUE;
 }
 
-bool InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
+BOOL InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 {
 	if ((*ret = (Direct3DCreate8_t)GetProcAddress(D3D8Handle, "Direct3DCreate8")) == NULL)
 	{
 		LogWithErrorCode(GetLastError(), "%s: error: LoadFuncFromD3D8 failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
-	return true;
+	return TRUE;
 }
 
-bool cs_LogInitImpl(void)
+BOOL cs_LogInitImpl(void)
 {
 	char exepath[MAX_PATH + 1];
 	char exedrivepath[_MAX_DRIVE + 1];
@@ -327,25 +325,25 @@ bool cs_LogInitImpl(void)
 	if ((len = GetModuleFileNameA(NULL, exepath, sizeof(exepath))) == 0)
 	{
 		LogWithErrorCode(GetLastError(), "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	if (len >= sizeof(exepath))
 	{
 		LogWithErrorCode(ERROR_INSUFFICIENT_BUFFER, "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
 	{
 		Log("%s: error: _splitpath_s failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
 	{
 		Log("%s: error: myasprintf failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	g_LogFile = CreateFileA(logpath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -354,29 +352,29 @@ bool cs_LogInitImpl(void)
 	if (g_LogFile == INVALID_HANDLE_VALUE)
 	{
 		LogWithErrorCode(GetLastError(), "%s: error: CreateFileA failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
-	return true;
+	return TRUE;
 }
 
-bool cs_LogInit(void)
+BOOL cs_LogInit(void)
 {
 	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
 
-	bool ret;
+	BOOL ret;
 
 	switch (g_initstatus)
 	{
 	case INITSTATUS_SUCCEEDED:
-		return true;
+		return TRUE;
 	case INITSTATUS_FAILED:
-		return false;
+		return FALSE;
 	case INITSTATUS_UNINITED:
 		break;
 	default:
 		Log("%s: error: unreachable.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	ret = cs_LogInitImpl();
@@ -384,9 +382,9 @@ bool cs_LogInit(void)
 	return ret;
 }
 
-bool LogInit(void)
+BOOL LogInit(void)
 {
-	bool ret;
+	BOOL ret;
 
 	EnterCriticalSection(&g_CS);
 	ret = cs_LogInit();
@@ -394,43 +392,43 @@ bool LogInit(void)
 	return ret;
 }
 
-bool cs_InitImpl(void)
+BOOL cs_InitImpl(void)
 {
 	if (!InitD3D8Handle(&g_D3D8Handle))
 	{
 		Log("%s: error: InitD3D8Handle failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
 	{
 		Log("%s: error: InitVanillaDirect3DCreate8 failed.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
 	g_D3DDev8ExDataTable = IDirect3DDevice8ExtraDataTableNew();
 
-	return true;
+	return TRUE;
 }
 
-bool cs_Init(void)
+BOOL cs_Init(void)
 {
 	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
 
-	bool ret;
+	BOOL ret;
 
 	switch (g_initstatus)
 	{
 	case INITSTATUS_SUCCEEDED:
-		return true;
+		return TRUE;
 	case INITSTATUS_FAILED:
-		return false;
+		return FALSE;
 	case INITSTATUS_UNINITED:
 		break;
 	default:
 		Log("%s: error: unreachable.", __FUNCTION__);
-		return false;
+		return FALSE;
 	}
 
 	ret = cs_InitImpl();
@@ -438,9 +436,9 @@ bool cs_Init(void)
 	return ret;
 }
 
-bool Init(void)
+BOOL Init(void)
 {
-	bool ret;
+	BOOL ret;
 
 	EnterCriticalSection(&g_CS);
 	ret = cs_Init();
