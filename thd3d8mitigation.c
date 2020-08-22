@@ -15,6 +15,7 @@
 //   g_*: Global variable
 //   *_t: Type identifier
 //   Mod*: Modified
+//   V*: Function with va_list
 
 // XXX TODO error handling
 // XXX TODO review
