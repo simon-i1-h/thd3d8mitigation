@@ -425,12 +425,11 @@ bool Init(void)
 	return ret;
 }
 
-// 実質的なエントリーポイントなので、最初は初期化処理を行う
 IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 {
 	IDirect3D8* ret;
 
-	// init
+	// 実質的なエントリーポイントなので、最初は初期化処理を行う
 
 	if (!LogInit())
 	{
@@ -447,7 +446,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 		return NULL;
 	}
 
-	// body
+	// 本体
 
 	EnterCriticalSection(&g_CS);
 	ret = cs_ModDirect3DCreate8Impl(SDKVersion);
