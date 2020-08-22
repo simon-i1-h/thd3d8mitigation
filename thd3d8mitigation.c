@@ -16,7 +16,6 @@
 // XXX TODO review
 // XXX TODO コード整形
 // XXX TODO Direct3D 8の振る舞いを見て機能の有効/無効を自動で切り替えたい
-// XXX TODO 高精度タイマーを使った代替実装。設定ファイルで切り替え可能にする。
 
 enum InitStatus {
 	INITSTATUS_UNINITED,
@@ -59,6 +58,40 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	return ret;
 }
 
+HRESULT ModIDirect3DDevice8PresentWithQueryPerformanceCounter(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
+{
+	D3DRASTER_STATUS stat;
+	HRESULT ret;
+	LARGE_INTEGER prevframe_count, nextframe_count, curr_count, curr_count_on_second, count;
+	int curr_frame_on_second;
+
+	do {
+		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
+		{
+			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			return E_FAIL;
+		}
+		SleepEx(0, TRUE);
+	} while (stat.InVBlank);
+
+	ret = me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+
+	QueryPerformanceCounter(&curr_count);
+	curr_count_on_second.QuadPart = curr_count.QuadPart % me_exdata->PerformanceFrequency.QuadPart;
+	prevframe_count.QuadPart = curr_count.QuadPart - curr_count_on_second.QuadPart;
+	curr_frame_on_second = (int)(curr_count_on_second.QuadPart / me_exdata->CountPerFrame.QuadPart);
+	nextframe_count.QuadPart = prevframe_count.QuadPart + me_exdata->CountPerFrame.QuadPart * curr_frame_on_second + me_exdata->CountPerFrame.QuadPart;
+	if (curr_frame_on_second == 0)
+		nextframe_count.QuadPart += me_exdata->RemainderPerSecond;
+
+	do {
+		QueryPerformanceCounter(&count);
+		SleepEx(0, TRUE);
+	} while (count.QuadPart < nextframe_count.QuadPart);
+
+	return ret;
+}
+
 HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
@@ -79,6 +112,8 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 	else
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+		// XXX TODO 有効化
+		//return ModIDirect3DDevice8PresentWithQueryPerformanceCounter(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
 
 ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
@@ -149,6 +184,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	DWORD orig_protect;
 	IDirect3DDevice8* d3ddev8;
 	IDirect3DDevice8Vtbl* vtbl;
+	struct IDirect3DDevice8ExtraData d3ddev8_exdata;
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
 	{
@@ -171,7 +207,17 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		return E_FAIL;
 	}
 
-	if (!IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, (struct IDirect3DDevice8ExtraData) { .VanillaPresent = vtbl->Present, .VanillaRelease = vtbl->Release, .VanillaReset = vtbl->Reset, .pp = *pPresentationParameters }))
+	d3ddev8_exdata = (struct IDirect3DDevice8ExtraData){
+		.VanillaPresent = vtbl->Present,
+		.VanillaRelease = vtbl->Release,
+		.VanillaReset = vtbl->Reset,
+		.pp = *pPresentationParameters,
+		.FrameRate = FRAME_RATE
+	};
+	QueryPerformanceFrequency(&d3ddev8_exdata.PerformanceFrequency);
+	d3ddev8_exdata.RemainderPerSecond = d3ddev8_exdata.PerformanceFrequency.QuadPart % d3ddev8_exdata.FrameRate;
+	d3ddev8_exdata.CountPerFrame.QuadPart = d3ddev8_exdata.PerformanceFrequency.QuadPart / d3ddev8_exdata.FrameRate;
+	if (!IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata))
 	{
 		Log("%s: error: IDirect3DDevice8ExtraDataTableInsert failed.", __FUNCTION__);
 		return E_FAIL;
