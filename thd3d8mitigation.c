@@ -76,18 +76,13 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
 
-ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
+ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
 {
 	ULONG ret;
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
-	// load from critical section
-	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
-	LeaveCriticalSection(&g_CS);
-
-	if (me_exdata == NULL)
+	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
 		return 0; // XXX FIXME error handling
 
 	ret = me_exdata->VanillaRelease(me);
@@ -97,28 +92,30 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	// https://docs.microsoft.com/ja-jp/windows/win32/api/unknwn/nf-unknwn-iunknown-release
 	if (ret == 0)
 	{
-		// store to critical section
-		EnterCriticalSection(&g_CS);
 		IDirect3DDevice8ExtraDataTableErase(g_D3DDev8ExDataTable, me);
 		IDirect3DDevice8ExtraDataTableShrinkToFit(g_D3DDev8ExDataTable);
-		LeaveCriticalSection(&g_CS);
 	}
 
 	return ret;
 }
 
-HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
+ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
+{
+	ULONG ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3DDevice8ReleaseImpl(me);
+	LeaveCriticalSection(&g_CS);
+	return ret;
+}
+
+HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
 	HRESULT ret;
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
-	// load from critical section
-	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
-	LeaveCriticalSection(&g_CS);
-
-	if (me_exdata == NULL)
+	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
 		return E_FAIL; // XXX FIXME error handling
 
 	ret = me_exdata->VanillaReset(me, pPresentationParameters);
@@ -128,7 +125,17 @@ HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARA
 	return ret;
 }
 
-HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
+HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
+{
+	HRESULT ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3DDevice8ResetImpl(me, pPresentationParameters);
+	LeaveCriticalSection(&g_CS);
+	return ret;
+}
+
+HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
@@ -138,12 +145,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 	IDirect3DDevice8Vtbl* vtbl;
 	struct IDirect3DDevice8ExtraData d3ddev8_exdata;
 
-	// load from critical section
-	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me);
-	LeaveCriticalSection(&g_CS);
-
-	if (me_exdata == NULL)
+	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
 		return E_FAIL; // XXX TODO logging
 
 	ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
@@ -170,26 +172,28 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
 		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
 
-	// store to critical section
-	EnterCriticalSection(&g_CS);
 	IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata); // XXX TODO error handling
-	LeaveCriticalSection(&g_CS);
 
 	return ret;
 }
 
-ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
+HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
+{
+	HRESULT ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3D8CreateDeviceImpl(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+	LeaveCriticalSection(&g_CS);
+	return ret;
+}
+
+ULONG __stdcall cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
 {
 	ULONG ret;
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
 	struct IDirect3D8ExtraData* me_exdata;
 
-	// load from critical section
-	EnterCriticalSection(&g_CS);
-	me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me);
-	LeaveCriticalSection(&g_CS);
-
-	if (me_exdata == NULL)
+	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
 		return 0; // XXX FIXME error handling
 
 	ret = me_exdata->VanillaRelease(me);
@@ -199,13 +203,20 @@ ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
 	// https://docs.microsoft.com/ja-jp/windows/win32/api/unknwn/nf-unknwn-iunknown-release
 	if (ret == 0)
 	{
-		// store to critical section
-		EnterCriticalSection(&g_CS);
 		IDirect3D8ExtraDataTableErase(g_D3D8ExDataTable, me);
 		IDirect3D8ExtraDataTableShrinkToFit(g_D3D8ExDataTable);
-		LeaveCriticalSection(&g_CS);
 	}
 
+	return ret;
+}
+
+ULONG __stdcall ModIDirect3D8Release(IDirect3D8* me)
+{
+	ULONG ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3D8ReleaseImpl(me);
+	LeaveCriticalSection(&g_CS);
 	return ret;
 }
 
@@ -263,21 +274,15 @@ enum InitStatus {
 	INITSTATUS_FAILED
 };
 
-// XXX TODO Init専用のクリティカルセクションがあったほうがいいかも
-// XXX TODO LeaveCriticalSectionをまとめる
-bool Init(void)
+bool cs_Init(void)
 {
 	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
-
-	EnterCriticalSection(&g_CS);
 
 	switch (g_initstatus)
 	{
 	case INITSTATUS_SUCCEEDED:
-		LeaveCriticalSection(&g_CS);
 		return true;
 	case INITSTATUS_FAILED:
-		LeaveCriticalSection(&g_CS);
 		return false;
 	case INITSTATUS_UNINITED:
 		break;
@@ -287,27 +292,22 @@ bool Init(void)
 
 	if (!InitD3D8Handle(&g_D3D8Handle))
 	{
-		LeaveCriticalSection(&g_CS);
 		return false; // XXX TODO logging
 	}
 
 	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
 	{
-		LeaveCriticalSection(&g_CS);
 		return false; // XXX TODO logging
 	}
 
 	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
 	g_D3DDev8ExDataTable = IDirect3DDevice8ExtraDataTableNew();
 
-	LeaveCriticalSection(&g_CS);
-
 	return true;
 }
 
 // いずれかのLog*関数を使う前にこの関数を呼ぶこと
-// XXX TODO LeaveCriticalSectionをまとめる
-bool LogInit(void)
+bool cs_LogInit(void)
 {
 	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
 
@@ -317,15 +317,11 @@ bool LogInit(void)
 	char* logpath;
 	DWORD err;
 
-	EnterCriticalSection(&g_CS);
-
 	switch (g_initstatus)
 	{
 	case INITSTATUS_SUCCEEDED:
-		LeaveCriticalSection(&g_CS);
 		return true;
 	case INITSTATUS_FAILED:
-		LeaveCriticalSection(&g_CS);
 		return false;
 	case INITSTATUS_UNINITED:
 		break;
@@ -336,7 +332,6 @@ bool LogInit(void)
 	if (GetModuleFileNameA(NULL, exepath, sizeof(exepath)) == 0)
 	{
 		g_initstatus = INITSTATUS_FAILED;
-		LeaveCriticalSection(&g_CS);
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": GetModuleFileNameA failed.\n");  // XXX TODO logging
 		return false;
 	}
@@ -344,7 +339,6 @@ bool LogInit(void)
 	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
 	{
 		g_initstatus = INITSTATUS_FAILED;
-		LeaveCriticalSection(&g_CS);
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": _splitpath_s failed.\n");  // XXX TODO logging
 		return false;
 	}
@@ -352,7 +346,6 @@ bool LogInit(void)
 	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
 	{
 		g_initstatus = INITSTATUS_FAILED;
-		LeaveCriticalSection(&g_CS);
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": myasprintf failed.\n");  // XXX TODO logging
 		return false;
 	}
@@ -364,27 +357,24 @@ bool LogInit(void)
 	if (g_LogFile == INVALID_HANDLE_VALUE)
 	{
 		g_initstatus = INITSTATUS_FAILED;
-		LeaveCriticalSection(&g_CS);
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": CreateFileA failed.\n");  // XXX TODO logging
 		return false;
 	}
 
 	g_initstatus = INITSTATUS_SUCCEEDED;
-	LeaveCriticalSection(&g_CS);
 	return true;
 }
 
-IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
+IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 {
 	IDirect3D8* ret;
-	Direct3DCreate8_t VanillaDirect3DCreate8;
 	DWORD orig_protect;
 	IDirect3D8Vtbl* vtbl;
 	struct IDirect3D8ExtraData d3d8_exdata;
 
 	// init
 
-	if (!LogInit())
+	if (!cs_LogInit())
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": log initialization failed.\n");
 		return NULL;
@@ -393,18 +383,13 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	LogInfo("%s: Version: %s", __FUNCTION__, THF_VERSION);
 
-	if (!Init())
+	if (!cs_Init())
 	{
 		LogInfo("%s: initialization failed.", __FUNCTION__);
 		return NULL;
 	}
 
-	// load from critical section
-	EnterCriticalSection(&g_CS);
-	VanillaDirect3DCreate8 = g_VanillaDirect3DCreate8;
-	LeaveCriticalSection(&g_CS);
-
-	if ((ret = VanillaDirect3DCreate8(SDKVersion)) == NULL)
+	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
 		return NULL; // XXX TODO logging
 
 	// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
@@ -425,9 +410,17 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
 		LogError(GetLastError(), "%s: VirtualProtect (original protect) failed.", __FUNCTION__);
 
-	// store to critical section
-	EnterCriticalSection(&g_CS);
 	IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata); // XXX TODO error handling
+
+	return ret;
+}
+
+IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
+{
+	IDirect3D8* ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModDirect3DCreate8Impl(SDKVersion);
 	LeaveCriticalSection(&g_CS);
 
 	return ret;
