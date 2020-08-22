@@ -72,8 +72,8 @@ int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);
 int AllocateErrorMessageA(DWORD, char**);
 void Log(const char*, ...);
-void LogError(DWORD, const char*, ...);
-__declspec(noreturn) void LogFatal(int, const char*, ...);
+void LogWithErrorCode(DWORD, const char*, ...);
+__declspec(noreturn) void Fatal(int, const char*, ...);
 
 // extradatatable.cpp
 

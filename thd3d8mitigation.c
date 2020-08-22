@@ -164,7 +164,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 	{
-		LogError(GetLastError(), "%s: error: VirtualProtect (PAGE_READWRITE) failed", __FUNCTION__);
+		LogWithErrorCode(GetLastError(), "%s: error: VirtualProtect (PAGE_READWRITE) failed", __FUNCTION__);
 		return E_FAIL;
 	}
 
@@ -175,7 +175,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-		LogError(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
+		LogWithErrorCode(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
 
 	IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata); // XXX TODO error handling
 
@@ -241,7 +241,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), PAGE_READWRITE, &orig_protect))
 	{
-		LogError(GetLastError(), "%s: error: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
+		LogWithErrorCode(GetLastError(), "%s: error: VirtualProtect (PAGE_READWRITE) failed.", __FUNCTION__);
 		return NULL;
 	}
 
@@ -251,7 +251,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
-		LogError(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
+		LogWithErrorCode(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
 
 	IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata); // XXX TODO error handling
 
@@ -267,7 +267,7 @@ bool InitD3D8Handle(HMODULE* ret)
 
 	if ((len = GetSystemDirectoryA(sysdirpath, sizeof(sysdirpath))) == 0)
 	{
-		LogError(GetLastError(), "%s: error: GetSystemDirectoryA failed.", __FUNCTION__);
+		LogWithErrorCode(GetLastError(), "%s: error: GetSystemDirectoryA failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -288,7 +288,7 @@ bool InitD3D8Handle(HMODULE* ret)
 	free(sysdllpath);
 	if (*ret == NULL)
 	{
-		LogError(err, "%s: error: LoadLibraryA failed.", __FUNCTION__);
+		LogWithErrorCode(err, "%s: error: LoadLibraryA failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -299,7 +299,7 @@ bool InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 {
 	if ((*ret = (Direct3DCreate8_t)GetProcAddress(D3D8Handle, "Direct3DCreate8")) == NULL)
 	{
-		LogError(GetLastError(), "%s: error: LoadFuncFromD3D8 failed.", __FUNCTION__);
+		LogWithErrorCode(GetLastError(), "%s: error: LoadFuncFromD3D8 failed.", __FUNCTION__);
 		return false;
 	}
 

@@ -128,7 +128,7 @@ cleanup:
 	free(errmsg);
 }
 
-void LogError(DWORD err, const char* fmt, ...)
+void LogWithErrorCode(DWORD err, const char* fmt, ...)
 {
 	va_list ap;
 
@@ -138,7 +138,7 @@ void LogError(DWORD err, const char* fmt, ...)
 }
 
 // XXX TODO proper exit
-__declspec(noreturn) void LogFatal(int exitcode, const char* fmt, ...)
+__declspec(noreturn) void Fatal(int exitcode, const char* fmt, ...)
 {
 	va_list ap;
 
