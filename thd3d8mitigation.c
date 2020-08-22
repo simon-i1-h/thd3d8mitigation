@@ -41,7 +41,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
-			LogInfo("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 		Sleep(0); // XXX TODO SleepEx?
@@ -52,7 +52,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	do {
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
-			LogInfo("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 		Sleep(0); // XXX TODO SleepEx?
@@ -272,13 +272,13 @@ bool InitD3D8Handle(HMODULE* ret)
 
 	if (len > sizeof(sysdirpath))  // XXX TODO review condition
 	{
-		LogInfo("%s: error: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
+		Log("%s: error: GetSystemDirectoryA failed.: Path too long.", __FUNCTION__); // XXX TODO error message
 		return false;
 	}
 
 	if (myasprintf(&sysdllpath, "%s\\d3d8.dll", sysdirpath) < 0)
 	{
-		LogInfo("%s: error: myasprintf failed.", __FUNCTION__);
+		Log("%s: error: myasprintf failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -378,13 +378,13 @@ bool cs_InitImpl(void)
 {
 	if (!InitD3D8Handle(&g_D3D8Handle))
 	{
-		LogInfo("%s: error: InitD3D8Handle failed.", __FUNCTION__);
+		Log("%s: error: InitD3D8Handle failed.", __FUNCTION__);
 		return false;
 	}
 
 	if (!InitVanillaDirect3DCreate8(g_D3D8Handle, &g_VanillaDirect3DCreate8))
 	{
-		LogInfo("%s: error: InitVanillaDirect3DCreate8 failed.", __FUNCTION__);
+		Log("%s: error: InitVanillaDirect3DCreate8 failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -436,11 +436,11 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	}
 	// これ以降はログを使うことができる
 
-	LogInfo("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
+	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
 
 	if (!Init())
 	{
-		LogInfo("%s: error: initialization failed.", __FUNCTION__);
+		Log("%s: error: initialization failed.", __FUNCTION__);
 		return NULL;
 	}
 

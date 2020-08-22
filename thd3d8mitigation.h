@@ -71,7 +71,7 @@ HANDLE g_LogFile;
 int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);
 int AllocateErrorMessageA(DWORD, char**);
-void LogInfo(const char*, ...);
+void Log(const char*, ...);
 void LogError(DWORD, const char*, ...);
 __declspec(noreturn) void LogFatal(int, const char*, ...);
 

@@ -56,7 +56,7 @@ int AllocateErrorMessageA(DWORD code, char** strp)
 	return len;
 }
 
-void VLogInfo(const char* fmt, va_list ap)
+void VLog(const char* fmt, va_list ap)
 {
 	char* origmsg = NULL, * msg = NULL;
 	DWORD tmp;
@@ -84,12 +84,12 @@ cleanup:
 	free(origmsg);
 }
 
-void LogInfo(const char* fmt, ...)
+void Log(const char* fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	VLogInfo(fmt, ap);
+	VLog(fmt, ap);
 	va_end(ap);
 }
 
@@ -143,7 +143,7 @@ __declspec(noreturn) void LogFatal(int exitcode, const char* fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	VLogInfo(fmt, ap);
+	VLog(fmt, ap);
 	va_end(ap);
 	ExitProcess(exitcode);
 }
