@@ -42,7 +42,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
-		Sleep(0); // XXX TODO SleepEx?
+		SleepEx(0, TRUE);
 	} while (stat.InVBlank);
 
 	ret = me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
@@ -53,7 +53,7 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
 			return E_FAIL;
 		}
-		Sleep(0); // XXX TODO SleepEx?
+		SleepEx(0, TRUE);
 	} while (!stat.InVBlank);
 
 	return ret;
