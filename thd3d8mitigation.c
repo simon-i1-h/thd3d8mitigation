@@ -152,7 +152,6 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	DWORD orig_protect;
 	IDirect3DDevice8* d3ddev8;
 	IDirect3DDevice8Vtbl* vtbl;
-	struct IDirect3DDevice8ExtraData d3ddev8_exdata;
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
 	{
@@ -175,7 +174,12 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		return E_FAIL;
 	}
 
-	d3ddev8_exdata = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = vtbl->Present, .VanillaRelease = vtbl->Release, .VanillaReset = vtbl->Reset, .pp = *pPresentationParameters };
+	if (!IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, (struct IDirect3DDevice8ExtraData) { .VanillaPresent = vtbl->Present, .VanillaRelease = vtbl->Release, .VanillaReset = vtbl->Reset, .pp = *pPresentationParameters }))
+	{
+		Log("%s: error: IDirect3DDevice8ExtraDataTableInsert failed.", __FUNCTION__);
+		return E_FAIL;
+	}
+
 	vtbl->Present = ModIDirect3DDevice8Present;
 	vtbl->Release = ModIDirect3DDevice8Release;
 	vtbl->Reset = ModIDirect3DDevice8Reset;
@@ -183,8 +187,6 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
 		LogWithErrorCode(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
-
-	IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata); // XXX TODO error handling
 
 	return ret;
 }
@@ -235,7 +237,6 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	IDirect3D8* ret;
 	DWORD orig_protect;
 	IDirect3D8Vtbl* vtbl;
-	struct IDirect3D8ExtraData d3d8_exdata;
 
 	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
 	{
@@ -253,15 +254,18 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 		return NULL;
 	}
 
-	d3d8_exdata = (struct IDirect3D8ExtraData){ .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release };
+	if (!IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, (struct IDirect3D8ExtraData) { .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release }))
+	{
+		Log("%s: error: IDirect3D8ExtraDataTableInsert failed.", __FUNCTION__);
+		return NULL;
+	}
+
 	vtbl->CreateDevice = ModIDirect3D8CreateDevice;
 	vtbl->Release = ModIDirect3D8Release;
 
 	// best effort
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
 		LogWithErrorCode(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
-
-	IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata); // XXX TODO error handling
 
 	return ret;
 }
