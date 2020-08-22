@@ -340,7 +340,6 @@ bool cs_LogInitImpl(void)
 		return false;
 	}
 
-	OutputDebugStringA(logpath);
 	g_LogFile = CreateFileA(logpath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	err = GetLastError();
 	free(logpath);
@@ -454,8 +453,6 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	}
 	// これ以降はログがファイルにも記録される
 
-	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
-	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
 	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
 
 	if (!Init())
