@@ -75,7 +75,10 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
-		return E_FAIL; // XXX TODO logging
+	{
+		Log("%s: error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
+		return E_FAIL;
+	}
 
 	if (me_exdata->pp.Windowed || (me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_DEFAULT && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_ONE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_TWO && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_THREE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_FOUR))
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
@@ -90,7 +93,10 @@ ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
-		return 0; // XXX FIXME error handling
+	{
+		Log("%s: error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
+		return 0; // XXX TODO return value
+	}
 
 	ret = me_exdata->VanillaRelease(me);
 
@@ -123,7 +129,10 @@ HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMET
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
+	{
+		Log("%s: error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
 		return E_FAIL; // XXX FIXME error handling
+	}
 
 	ret = me_exdata->VanillaReset(me, pPresentationParameters);
 	if (SUCCEEDED(ret))
@@ -153,7 +162,10 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	struct IDirect3DDevice8ExtraData d3ddev8_exdata;
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
-		return E_FAIL; // XXX TODO logging
+	{
+		Log("%s: error: IDirect3D8ExtraDataTableGet failed.", __FUNCTION__);
+		return E_FAIL;
+	}
 
 	ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
 	if (FAILED(ret))
@@ -201,7 +213,10 @@ ULONG __stdcall cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
 	struct IDirect3D8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
+	{
+		Log("%s: error: IDirect3D8ExtraDataTableGet failed.", __FUNCTION__);
 		return 0; // XXX FIXME error handling
+	}
 
 	ret = me_exdata->VanillaRelease(me);
 
@@ -235,7 +250,10 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	struct IDirect3D8ExtraData d3d8_exdata;
 
 	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
-		return NULL; // XXX TODO logging
+	{
+		Log("%s: error: g_VanillaDirect3DCreate8 failed.", __FUNCTION__);
+		return NULL;
+	}
 
 	// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
 
