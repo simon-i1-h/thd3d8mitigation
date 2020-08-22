@@ -66,7 +66,8 @@ CRITICAL_SECTION g_CS;
 
 #define LOG_PREFIX "[thd3d8mitigation]"
 
-HANDLE g_LogFile;
+/* nullable */
+extern HANDLE g_LogFile;
 
 int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);

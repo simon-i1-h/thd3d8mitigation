@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-// ログの初期化で使うため、この関数からログ関数を呼び出してはいけない
+HANDLE g_LogFile = NULL;
+
 int myvasprintf(char** strp, const char* fmt, va_list ap)
 {
 	va_list ap2;
@@ -31,7 +32,6 @@ int myvasprintf(char** strp, const char* fmt, va_list ap)
 	return len;
 }
 
-// ログの初期化で使うため、この関数からログ関数を呼び出してはいけない
 int myasprintf(char** strp, const char* fmt, ...)
 {
 	va_list ap;
@@ -75,8 +75,9 @@ void VLog(const char* fmt, va_list ap)
 
 	OutputDebugStringA(msg);
 	EnterCriticalSection(&g_CS);
-	if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
+	if (g_LogFile != NULL)
+		if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
+			OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
 	LeaveCriticalSection(&g_CS);
 
 cleanup:
@@ -118,8 +119,9 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 
 	OutputDebugStringA(msg);
 	EnterCriticalSection(&g_CS);
-	if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
+	if (g_LogFile != NULL)
+		if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
+			OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
 	LeaveCriticalSection(&g_CS);
 
 cleanup:

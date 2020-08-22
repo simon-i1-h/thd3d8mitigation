@@ -316,26 +316,25 @@ bool cs_LogInitImpl(void)
 
 	if ((len = GetModuleFileNameA(NULL, exepath, sizeof(exepath))) == 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: GetModuleFileNameA failed.\n");  // XXX TODO logging
+		LogWithErrorCode(GetLastError(), "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
 		return false;
 	}
 
 	if (len >= sizeof(exepath))
 	{
-		// ERROR_INSUFFICIENT_BUFFER
-		OutputDebugStringA("%s: error: GetSystemDirectoryA failed.", __FUNCTION__);  // XXX TODO logging
+		LogWithErrorCode(ERROR_INSUFFICIENT_BUFFER, "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
 		return false;
 	}
 
 	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: _splitpath_s failed.\n");
+		Log("%s: error: _splitpath_s failed.", __FUNCTION__);
 		return false;
 	}
 
 	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: myasprintf failed.\n");
+		Log("%s: error: myasprintf failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -345,7 +344,7 @@ bool cs_LogInitImpl(void)
 	free(logpath);
 	if (g_LogFile == INVALID_HANDLE_VALUE)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: CreateFileA failed.\n");  // XXX TODO logging
+		LogWithErrorCode(GetLastError(), "%s: error: CreateFileA failed.", __FUNCTION__);
 		return false;
 	}
 
@@ -376,7 +375,6 @@ bool cs_LogInit(void)
 	return ret;
 }
 
-// いずれかのLog*関数を使う前にこの関数を呼ぶこと
 bool LogInit(void)
 {
 	bool ret;
@@ -452,8 +450,10 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: log initialization failed.\n");
 		return NULL;
 	}
-	// これ以降はログを使うことができる
+	// これ以降はログがファイルにも記録される
 
+	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
+	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
 	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
 
 	if (!Init())
