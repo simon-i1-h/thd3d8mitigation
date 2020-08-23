@@ -503,7 +503,7 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 
 	if (!LogInit())
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": error: log initialization failed.\n");
+		Log("%s: error: log initialization failed.", __FUNCTION__);
 		return NULL;
 	}
 	// これ以降はログがファイルにも記録される
