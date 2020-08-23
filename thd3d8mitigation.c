@@ -280,6 +280,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	IDirect3D8* ret;
 	DWORD orig_protect;
 	IDirect3D8Vtbl* vtbl;
+	struct IDirect3D8ExtraData d3d8_exdata;
 
 	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
 		return NULL;
@@ -294,7 +295,11 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 		return NULL;
 	}
 
-	if (!IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, (struct IDirect3D8ExtraData) { .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release }))
+	d3d8_exdata = (struct IDirect3D8ExtraData){
+		.VanillaCreateDevice = vtbl->CreateDevice,
+		.VanillaRelease = vtbl->Release
+	};
+	if (!IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata))
 	{
 		Log("%s: bug, error: IDirect3D8ExtraDataTableInsert failed.", __FUNCTION__);
 		return NULL;
