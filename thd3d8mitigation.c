@@ -104,7 +104,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 
 	if (me_exdata == NULL)
 	{
-		Log("%s: error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
+		Log("%s: bug, error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
 		return E_FAIL;
 	}
 
@@ -124,7 +124,7 @@ ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
 	{
-		Log("%s: warning: IDirect3DDevice8ExtraDataTableGet failed. Resource is leaking.", __FUNCTION__);
+		Log("%s: bug, warning: IDirect3DDevice8ExtraDataTableGet failed. Resource is leaking.", __FUNCTION__);
 		return 0;
 	}
 
@@ -155,7 +155,7 @@ HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMET
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
 	{
-		Log("%s: error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
+		Log("%s: bug, error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
 		return E_FAIL;
 	}
 
@@ -188,7 +188,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
 	{
-		Log("%s: error: IDirect3D8ExtraDataTableGet failed.", __FUNCTION__);
+		Log("%s: bug, error: IDirect3D8ExtraDataTableGet failed.", __FUNCTION__);
 		return E_FAIL;
 	}
 
@@ -219,7 +219,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	d3ddev8_exdata.CountPerFrame.QuadPart = d3ddev8_exdata.PerformanceFrequency.QuadPart / d3ddev8_exdata.FrameRate;
 	if (!IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata))
 	{
-		Log("%s: error: IDirect3DDevice8ExtraDataTableInsert failed.", __FUNCTION__);
+		Log("%s: bug, error: IDirect3DDevice8ExtraDataTableInsert failed.", __FUNCTION__);
 		return E_FAIL;
 	}
 
@@ -252,7 +252,7 @@ ULONG __stdcall cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
 	{
-		Log("%s: warning: IDirect3D8ExtraDataTableGet failed. Resource is leaking.", __FUNCTION__);
+		Log("%s: bug, warning: IDirect3D8ExtraDataTableGet failed. Resource is leaking.", __FUNCTION__);
 		return 0;
 	}
 
@@ -282,10 +282,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	IDirect3D8Vtbl* vtbl;
 
 	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
-	{
-		Log("%s: error: g_VanillaDirect3DCreate8 failed.", __FUNCTION__);
 		return NULL;
-	}
 
 	// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
 
@@ -299,7 +296,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 	if (!IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, (struct IDirect3D8ExtraData) { .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release }))
 	{
-		Log("%s: error: IDirect3D8ExtraDataTableInsert failed.", __FUNCTION__);
+		Log("%s: bug, error: IDirect3D8ExtraDataTableInsert failed.", __FUNCTION__);
 		return NULL;
 	}
 
@@ -420,7 +417,7 @@ BOOL cs_LogInit(void)
 	case INITSTATUS_UNINITED:
 		break;
 	default:
-		Log("%s: error: unreachable.", __FUNCTION__);
+		Log("%s: bug, error: unreachable.", __FUNCTION__);
 		return FALSE;
 	}
 
@@ -474,7 +471,7 @@ BOOL cs_Init(void)
 	case INITSTATUS_UNINITED:
 		break;
 	default:
-		Log("%s: error: unreachable.", __FUNCTION__);
+		Log("%s: bug, error: unreachable.", __FUNCTION__);
 		return FALSE;
 	}
 
