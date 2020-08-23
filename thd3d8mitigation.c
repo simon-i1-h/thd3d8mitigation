@@ -23,8 +23,15 @@ enum InitStatus {
 	INITSTATUS_FAILED
 };
 
+enum ConfigWaitFor {
+	CONFIG_WAITFOR_VSYNC,
+	CONFIG_WAITFOR_TIMER60,
+	CONFIG_WAITFOR_NORMAL
+};
+
 CRITICAL_SECTION g_CS;
 
+static enum ConfigWaitFor g_ConfigWaitFor;
 static HMODULE g_D3D8Handle;
 static Direct3DCreate8_t g_VanillaDirect3DCreate8;
 static struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
@@ -96,10 +103,12 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 {
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
 	struct IDirect3DDevice8ExtraData* me_exdata;
+	enum ConfigWaitFor config_wait_for;
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
 	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
+	config_wait_for = g_ConfigWaitFor;
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -110,10 +119,15 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 
 	if (me_exdata->pp.Windowed || (me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_DEFAULT && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_ONE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_TWO && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_THREE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_FOUR))
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-	else
+	else if (config_wait_for == CONFIG_WAITFOR_VSYNC)
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-		// XXX TODO 有効化
-		//return ModIDirect3DDevice8PresentWithQueryPerformanceCounter(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+	else if (config_wait_for == CONFIG_WAITFOR_TIMER60)
+		return ModIDirect3DDevice8PresentWithQueryPerformanceCounter(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+	else if (config_wait_for == CONFIG_WAITFOR_NORMAL)
+		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+
+	Log("%s: bug, error: unreachable.", __FUNCTION__);
+	return E_FAIL;
 }
 
 ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
@@ -315,6 +329,114 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	return ret;
 }
 
+int AllocateDataDirPath(char** strp)
+{
+	char exepath[MAX_PATH + 1];
+	char exedrivepath[_MAX_DRIVE + 1];
+	char exedirpath[_MAX_DIR + 1];
+	DWORD len;
+
+	if ((len = GetModuleFileNameA(NULL, exepath, sizeof(exepath))) == 0)
+	{
+		LogWithErrorCode(GetLastError(), "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
+		return -1;
+	}
+
+	if (len >= sizeof(exepath))
+	{
+		LogWithErrorCode(ERROR_INSUFFICIENT_BUFFER, "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
+		return -1;
+	}
+
+	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
+	{
+		Log("%s: error: _splitpath_s failed.", __FUNCTION__);
+		return -1;
+	}
+
+	return myasprintf(strp, "%s%s", exedrivepath, exedirpath);
+}
+
+int AllocateDataFilePath(char** strp, char* filename)
+{
+	char* datadirpath;
+	int ret;
+
+	if (AllocateDataDirPath(&datadirpath) < 0)
+	{
+		Log("%s: error: AllocateDataDirPath failed.", __FUNCTION__);
+		return -1;
+	}
+
+	ret = myasprintf(strp, "%s%s", datadirpath, filename);
+	free(datadirpath);
+	return ret;
+}
+
+BOOL ExistsFile(char* path)
+{
+	return GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES;
+}
+
+BOOL cs_InitConfig(void)
+{
+	char* section_global = "global";
+	char* key_unlock_incompatible_options = "unlock_incompatible_options";
+	char* key_wait_for = "wait_for";
+	char* value_wait_for_vsync = "vsync";
+	char* value_wait_for_timer60 = "timer60";
+	char* value_wait_for_normal = "normal";
+
+	BOOL config_unlock_incompatible_options;
+	enum ConfigWaitFor config_wait_for_default = CONFIG_WAITFOR_VSYNC;
+	char* value_wait_for_default = value_wait_for_vsync;
+
+	char* path = NULL;
+	char buf[32];
+	BOOL ret = FALSE;
+
+	if (AllocateDataFilePath(&path, "thd3d8mitigationcfg.ini") < 0)
+	{
+		Log("%s: error: AllocateDataFilePath failed.", __FUNCTION__);
+		goto cleanup;
+	}
+
+	if (!ExistsFile(path))
+	{
+		if (WritePrivateProfileStringA(section_global, key_wait_for, value_wait_for_default, path) == 0)
+		{
+			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_wait_for);
+			goto cleanup;
+		}
+		if (WritePrivateProfileStringA(section_global, key_unlock_incompatible_options, "0", path) == 0)
+		{
+			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_unlock_incompatible_options);
+			goto cleanup;
+		}
+	}
+
+	config_unlock_incompatible_options = !!GetPrivateProfileIntA(section_global, key_unlock_incompatible_options, 0, path);
+	Log("%s: config %s: %d", __FUNCTION__, key_unlock_incompatible_options, config_unlock_incompatible_options);
+
+	g_ConfigWaitFor = config_wait_for_default;
+	if (GetPrivateProfileStringA(section_global, key_wait_for, value_wait_for_default, buf, sizeof(buf), path) >= sizeof(buf) - 1)
+		/* no op */;
+	else if (strcmp(buf, value_wait_for_vsync) == 0)
+		g_ConfigWaitFor = CONFIG_WAITFOR_VSYNC;
+	else if ((strcmp(buf, value_wait_for_timer60) == 0) && config_unlock_incompatible_options)
+		g_ConfigWaitFor = CONFIG_WAITFOR_TIMER60;
+	else if (strcmp(buf, value_wait_for_normal) == 0)
+		g_ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
+	else
+		/* no op */;
+	Log("%s: config %s: %s", __FUNCTION__, key_wait_for, buf);
+
+	ret = TRUE;
+cleanup:
+	free(path);
+	return ret;
+}
+
 BOOL InitD3D8Handle(HMODULE* ret)
 {
 	char sysdirpath[MAX_PATH + 1];
@@ -365,33 +487,12 @@ BOOL InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 
 BOOL cs_LogInitImpl(void)
 {
-	char exepath[MAX_PATH + 1];
-	char exedrivepath[_MAX_DRIVE + 1];
-	char exedirpath[_MAX_DIR + 1];
 	char* logpath;
-	DWORD err, len;
+	DWORD err;
 
-	if ((len = GetModuleFileNameA(NULL, exepath, sizeof(exepath))) == 0)
+	if (AllocateDataFilePath(&logpath, "thd3d8mitigationlog.txt") < 0)
 	{
-		LogWithErrorCode(GetLastError(), "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
-		return FALSE;
-	}
-
-	if (len >= sizeof(exepath))
-	{
-		LogWithErrorCode(ERROR_INSUFFICIENT_BUFFER, "%s: error: GetModuleFileNameA failed.", __FUNCTION__);
-		return FALSE;
-	}
-
-	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
-	{
-		Log("%s: error: _splitpath_s failed.", __FUNCTION__);
-		return FALSE;
-	}
-
-	if (myasprintf(&logpath, "%s%sthd3d8mitigationlog.txt", exedrivepath, exedirpath) < 0)
-	{
-		Log("%s: error: myasprintf failed.", __FUNCTION__);
+		Log("%s: error: AllocateDataFilePath failed.", __FUNCTION__);
 		return FALSE;
 	}
 
@@ -457,6 +558,12 @@ BOOL cs_InitImpl(void)
 
 	g_D3D8ExDataTable = IDirect3D8ExtraDataTableNew();
 	g_D3DDev8ExDataTable = IDirect3DDevice8ExtraDataTableNew();
+
+	if (!cs_InitConfig())
+	{
+		Log("%s: error: cs_InitConfig failed.", __FUNCTION__);
+		return FALSE;
+	}
 
 	return TRUE;
 }
