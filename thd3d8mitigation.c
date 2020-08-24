@@ -536,7 +536,7 @@ BOOL ExistsFile(char* path)
 BOOL cs_InitConfig(void)
 {
 	char* section_global = "global";
-	char* section_present = "present";
+	char* section_present = "presentation";
 	char* key_unlock_incompatible_options = "unlock_incompatible_options";
 	char* key_wait_for = "wait_for";
 	char* value_wait_for_vsync = "vsync";
