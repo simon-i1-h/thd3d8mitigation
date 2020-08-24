@@ -6,16 +6,22 @@
 #define CINTERFACE
 #include <d3d8.h>
 
+#include <mmsystem.h>
+
+#include <math.h>
+
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
 // Naming convention:
 //   cs_*: Critical section
 //   g_*: Global variable
 //   *_t: Type identifier
 //   Mod*: Modified
 //   V*: Function with va_list
+//   tm_*: timeBeginPeriod and timeEndPeriod required
 
 // XXX TODO review
 // XXX TODO コード整形
-// XXX TODO Direct3D 8の振る舞いを見て機能の有効/無効を自動で切り替えたい
 
 enum InitStatus {
 	INITSTATUS_UNINITED,
@@ -23,15 +29,11 @@ enum InitStatus {
 	INITSTATUS_FAILED
 };
 
-enum ConfigWaitFor {
-	CONFIG_WAITFOR_VSYNC,
-	CONFIG_WAITFOR_TIMER60,
-	CONFIG_WAITFOR_NORMAL
-};
-
 CRITICAL_SECTION g_CS;
 
-static enum ConfigWaitFor g_ConfigWaitFor;
+static enum ConfigWaitFor g_ConfigFileWaitFor;
+static BOOL g_ConfigFileUnlockIncompatibleOptions;
+
 static HMODULE g_D3D8Handle;
 static Direct3DCreate8_t g_VanillaDirect3DCreate8;
 static struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
@@ -99,16 +101,24 @@ HRESULT ModIDirect3DDevice8PresentWithQueryPerformanceCounter(IDirect3DDevice8* 
 	return ret;
 }
 
+BOOL NeedPresentMitigation(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
+{
+	return !me_exdata->pp.Windowed &&
+		(me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
+			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
+			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
+			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
+			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
+}
+
 HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
 	struct IDirect3DDevice8ExtraData* me_exdata;
-	enum ConfigWaitFor config_wait_for;
 
 	// load from critical section
 	EnterCriticalSection(&g_CS);
 	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
-	config_wait_for = g_ConfigWaitFor;
 	LeaveCriticalSection(&g_CS);
 
 	if (me_exdata == NULL)
@@ -117,13 +127,13 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 		return E_FAIL;
 	}
 
-	if (me_exdata->pp.Windowed || (me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_DEFAULT && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_ONE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_TWO && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_THREE && me_exdata->pp.FullScreen_PresentationInterval != D3DPRESENT_INTERVAL_FOUR))
+	if (!NeedPresentMitigation(me, me_exdata))
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-	else if (config_wait_for == CONFIG_WAITFOR_VSYNC)
+	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-	else if (config_wait_for == CONFIG_WAITFOR_TIMER60)
+	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_TIMER60)
 		return ModIDirect3DDevice8PresentWithQueryPerformanceCounter(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-	else if (config_wait_for == CONFIG_WAITFOR_NORMAL)
+	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_NORMAL)
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
 	Log("%s: bug, error: unreachable.", __FUNCTION__);
@@ -190,6 +200,142 @@ HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARA
 	return ret;
 }
 
+struct MeasureFrameRateCallBackArgs {
+	IDirect3DDevice8* me;
+	struct IDirect3DDevice8ExtraData* me_exdata;
+};
+
+typedef BOOL(*MeasureFrameRateCallBack_t)(struct MeasureFrameRateCallBackArgs args);
+
+BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callback, struct MeasureFrameRateCallBackArgs args)
+{
+	double absolute_deviation_threshold = 3.0;
+
+	DWORD starttime;
+	DWORD endtime;
+	DWORD frame_second_list[10];
+	DWORD sum;
+	double average, absolute_deviation, absolute_deviation_max;
+	int i, j;
+
+	for (i = 0; i < ARRAY_SIZE(frame_second_list); i++)
+	{
+		starttime = timeGetTime();
+		if (!callback(args))
+			return FALSE;
+		endtime = timeGetTime();
+		frame_second_list[i] = endtime - starttime;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(frame_second_list) * 10; i++)
+	{
+		absolute_deviation_max = 0.0;
+		sum = 0;
+		for (j = 0; j < ARRAY_SIZE(frame_second_list); j++)
+			sum += frame_second_list[j];
+		average = (double)sum / (double)ARRAY_SIZE(frame_second_list);
+		for (j = 0; j < ARRAY_SIZE(frame_second_list); j++)
+		{
+			absolute_deviation = fabs(average - frame_second_list[j]);
+			if (absolute_deviation_max < absolute_deviation)
+				absolute_deviation_max = absolute_deviation;
+		}
+		if (absolute_deviation_max < absolute_deviation_threshold)
+			break;
+
+		starttime = timeGetTime();
+		if (!callback(args))
+			return FALSE;
+		endtime = timeGetTime();
+
+		frame_second_list[i % ARRAY_SIZE(frame_second_list)] = endtime - starttime;
+	}
+
+	*ret_frame_second = average;
+	return TRUE;
+}
+
+BOOL MeasureFrameRateCallBackNormal(struct MeasureFrameRateCallBackArgs args)
+{
+	return SUCCEEDED(args.me_exdata->VanillaPresent(args.me, NULL, NULL, NULL, NULL));
+}
+
+BOOL MeasureFrameRateCallBackVsync(struct MeasureFrameRateCallBackArgs args)
+{
+	D3DRASTER_STATUS stat;
+
+	do {
+		if (FAILED(args.me->lpVtbl->GetRasterStatus(args.me, &stat)))
+		{
+			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			return FALSE;
+		}
+		SleepEx(0, TRUE);
+	} while (stat.InVBlank);
+
+	do {
+		if (FAILED(args.me->lpVtbl->GetRasterStatus(args.me, &stat)))
+		{
+			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
+			return FALSE;
+		}
+		SleepEx(0, TRUE);
+	} while (!stat.InVBlank);
+
+	return TRUE;
+}
+
+BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, enum ConfigWaitFor* config_wait_for)
+{
+	double frame_second = 0.0;
+	double frame_second_threshold = 15.0; /* 66.6666... FPS */
+
+	Log("%s: Detecting proper configure...", __FUNCTION__);
+
+	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackNormal, (struct MeasureFrameRateCallBackArgs) { .me = me, .me_exdata = me_exdata }))
+		return FALSE;
+
+	if (frame_second > frame_second_threshold)
+	{
+		*config_wait_for = CONFIG_WAITFOR_NORMAL;
+		Log("%s: wait_for config: normal", __FUNCTION__);
+		return TRUE;
+	}
+
+	// unlock_incompatible_optionsが無効な時はtimer60を有効にしない
+	if (!g_ConfigFileUnlockIncompatibleOptions)
+	{
+		*config_wait_for = CONFIG_WAITFOR_VSYNC;
+		Log("%s: wait_for config: vsync", __FUNCTION__);
+		return TRUE;
+	}
+
+	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackVsync, (struct MeasureFrameRateCallBackArgs) { .me = me, .me_exdata = me_exdata }))
+		return FALSE;
+
+	if (frame_second > frame_second_threshold)
+	{
+		*config_wait_for = CONFIG_WAITFOR_VSYNC;
+		Log("%s: wait_for config: vsync", __FUNCTION__);
+		return TRUE;
+	}
+
+	*config_wait_for = CONFIG_WAITFOR_TIMER60;
+	Log("%s: wait_for config: timer60", __FUNCTION__);
+	return TRUE;
+}
+
+BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, enum ConfigWaitFor* config_wait_for)
+{
+	BOOL ret;
+
+	timeBeginPeriod(1);
+	ret = tm_DetectProperConfig(me, me_exdata, config_wait_for);
+	timeEndPeriod(1);
+
+	return ret;
+}
+
 HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
@@ -231,6 +377,17 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	QueryPerformanceFrequency(&d3ddev8_exdata.PerformanceFrequency);
 	d3ddev8_exdata.RemainderPerSecond = d3ddev8_exdata.PerformanceFrequency.QuadPart % d3ddev8_exdata.FrameRate;
 	d3ddev8_exdata.CountPerFrame.QuadPart = d3ddev8_exdata.PerformanceFrequency.QuadPart / d3ddev8_exdata.FrameRate;
+	if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO && NeedPresentMitigation(d3ddev8, &d3ddev8_exdata))
+	{
+		if (!DetectProperConfig(d3ddev8, &d3ddev8_exdata, &d3ddev8_exdata.ConfigWaitFor))
+		{
+			Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
+			return E_FAIL;
+		}
+	}
+	else
+		d3ddev8_exdata.ConfigWaitFor = g_ConfigFileWaitFor;
+
 	if (!IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata))
 	{
 		Log("%s: bug, error: IDirect3DDevice8ExtraDataTableInsert failed.", __FUNCTION__);
@@ -381,15 +538,16 @@ BOOL ExistsFile(char* path)
 BOOL cs_InitConfig(void)
 {
 	char* section_global = "global";
+	char* section_present = "present";
 	char* key_unlock_incompatible_options = "unlock_incompatible_options";
 	char* key_wait_for = "wait_for";
 	char* value_wait_for_vsync = "vsync";
 	char* value_wait_for_timer60 = "timer60";
 	char* value_wait_for_normal = "normal";
+	char* value_wait_for_auto = "auto";
 
-	BOOL config_unlock_incompatible_options;
-	enum ConfigWaitFor config_wait_for_default = CONFIG_WAITFOR_VSYNC;
-	char* value_wait_for_default = value_wait_for_vsync;
+	enum ConfigWaitFor config_wait_for_default = CONFIG_WAITFOR_AUTO;
+	char* value_wait_for_default = value_wait_for_auto;
 
 	char* path = NULL;
 	char buf[32];
@@ -403,33 +561,35 @@ BOOL cs_InitConfig(void)
 
 	if (!ExistsFile(path))
 	{
-		if (WritePrivateProfileStringA(section_global, key_wait_for, value_wait_for_default, path) == 0)
-		{
-			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_wait_for);
-			goto cleanup;
-		}
 		if (WritePrivateProfileStringA(section_global, key_unlock_incompatible_options, "0", path) == 0)
 		{
 			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_unlock_incompatible_options);
 			goto cleanup;
 		}
+		if (WritePrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, path) == 0)
+		{
+			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_wait_for);
+			goto cleanup;
+		}
 	}
 
-	config_unlock_incompatible_options = !!GetPrivateProfileIntA(section_global, key_unlock_incompatible_options, 0, path);
-	Log("%s: config %s: %d", __FUNCTION__, key_unlock_incompatible_options, config_unlock_incompatible_options);
+	g_ConfigFileUnlockIncompatibleOptions = !!GetPrivateProfileIntA(section_global, key_unlock_incompatible_options, 0, path);
+	Log("%s: config file %s: %d", __FUNCTION__, key_unlock_incompatible_options, g_ConfigFileUnlockIncompatibleOptions);
 
-	g_ConfigWaitFor = config_wait_for_default;
-	if (GetPrivateProfileStringA(section_global, key_wait_for, value_wait_for_default, buf, sizeof(buf), path) >= sizeof(buf) - 1)
+	g_ConfigFileWaitFor = config_wait_for_default;
+	if (GetPrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, buf, sizeof(buf), path) >= sizeof(buf) - 1)
 		/* no op */;
 	else if (strcmp(buf, value_wait_for_vsync) == 0)
-		g_ConfigWaitFor = CONFIG_WAITFOR_VSYNC;
-	else if ((strcmp(buf, value_wait_for_timer60) == 0) && config_unlock_incompatible_options)
-		g_ConfigWaitFor = CONFIG_WAITFOR_TIMER60;
+		g_ConfigFileWaitFor = CONFIG_WAITFOR_VSYNC;
+	else if ((strcmp(buf, value_wait_for_timer60) == 0) && g_ConfigFileUnlockIncompatibleOptions)
+		g_ConfigFileWaitFor = CONFIG_WAITFOR_TIMER60;
 	else if (strcmp(buf, value_wait_for_normal) == 0)
-		g_ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
+		g_ConfigFileWaitFor = CONFIG_WAITFOR_NORMAL;
+	else if (strcmp(buf, value_wait_for_auto) == 0)
+		g_ConfigFileWaitFor = CONFIG_WAITFOR_AUTO;
 	else
 		/* no op */;
-	Log("%s: config %s: %s", __FUNCTION__, key_wait_for, buf);
+	Log("%s: config file %s: %s", __FUNCTION__, key_wait_for, buf);
 
 	ret = TRUE;
 cleanup:

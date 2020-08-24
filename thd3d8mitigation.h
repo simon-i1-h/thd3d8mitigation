@@ -50,6 +50,13 @@ typedef ULONG(__stdcall* IDirect3DDevice8Release_t)(IDirect3DDevice8*);
 // type of IDirect3DDevice8::Reset
 typedef HRESULT(__stdcall* IDirect3DDevice8Reset_t)(IDirect3DDevice8*, D3DPRESENT_PARAMETERS*);
 
+enum ConfigWaitFor {
+	CONFIG_WAITFOR_VSYNC,
+	CONFIG_WAITFOR_TIMER60,
+	CONFIG_WAITFOR_NORMAL,
+	CONFIG_WAITFOR_AUTO
+};
+
 struct IDirect3D8ExtraData {
 	IDirect3D8CreateDevice_t VanillaCreateDevice;
 	IDirect3D8Release_t VanillaRelease;
@@ -69,6 +76,7 @@ struct IDirect3DDevice8ExtraData {
 	LARGE_INTEGER CountPerFrame;
 	int FrameRate;
 	int RemainderPerSecond;
+	enum ConfigWaitFor ConfigWaitFor;
 };
 
 extern CRITICAL_SECTION g_CS;
