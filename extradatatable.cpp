@@ -36,7 +36,8 @@ extern "C" struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void)
 	}
 }
 
-extern "C" BOOL IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h, IDirect3D8* k, struct IDirect3D8ExtraData v)
+extern "C" BOOL IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable* h, IDirect3D8* k,
+	struct IDirect3D8ExtraData v)
 {
 	try
 	{
@@ -124,7 +125,8 @@ extern "C" struct IDirect3DDevice8ExtraDataTable* IDirect3DDevice8ExtraDataTable
 	}
 }
 
-extern "C" BOOL IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k, struct IDirect3DDevice8ExtraData v)
+extern "C" BOOL IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k,
+	struct IDirect3DDevice8ExtraData v)
 {
 	try
 	{
@@ -140,7 +142,7 @@ extern "C" BOOL IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8Extr
 	}
 }
 
-extern "C" void IDirect3DDevice8ExtraDataTableErase(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8 * k)
+extern "C" void IDirect3DDevice8ExtraDataTableErase(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k)
 {
 	try
 	{
@@ -173,7 +175,8 @@ extern "C" void IDirect3DDevice8ExtraDataTableShrinkToFit(struct IDirect3DDevice
 	}
 }
 
-extern "C" struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(struct IDirect3DDevice8ExtraDataTable* h, IDirect3DDevice8* k)
+extern "C" struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(struct IDirect3DDevice8ExtraDataTable* h,
+	IDirect3DDevice8* k)
 {
 	try
 	{

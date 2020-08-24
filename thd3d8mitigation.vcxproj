@@ -167,6 +167,7 @@
     <ClCompile Include="extradatatable.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".clang-format" />
     <None Include="thd3d8mitigation.def" />
   </ItemGroup>
   <ItemGroup>

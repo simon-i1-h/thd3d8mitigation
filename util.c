@@ -5,9 +5,9 @@
 
 #include <mmsystem.h>
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 // XXX TODO Logをlog.cに分離するかも。その場合、LogInitもそちらの移す。
 
@@ -53,7 +53,8 @@ int AllocateErrorMessageA(DWORD code, char** strp)
 	int len;
 
 	// XXX TODO review
-	if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errmsg, 0, NULL) == 0)
+	if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errmsg, 0, NULL) == 0)
 		return -1;
 	len = myasprintf(strp, "%s", errmsg);
 	LocalFree(errmsg);
@@ -62,7 +63,7 @@ int AllocateErrorMessageA(DWORD code, char** strp)
 
 void VLog(const char* fmt, va_list ap)
 {
-	char* origmsg = NULL, * msg = NULL;
+	char *origmsg = NULL, *msg = NULL;
 	DWORD tmp, now;
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
@@ -75,7 +76,8 @@ void VLog(const char* fmt, va_list ap)
 	now = timeGetTime();
 	timeEndPeriod(1);
 
-	if (myasprintf(&msg, "%s[System time: %010lu][Thread: %010lu]: %s\n", LOG_PREFIX, now, GetCurrentThreadId(), origmsg) < 0)
+	if (myasprintf(&msg, "%s[System time: %010lu][Thread: %010lu]: %s\n", LOG_PREFIX, now, GetCurrentThreadId(),
+			origmsg) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
 		goto cleanup;
@@ -104,7 +106,7 @@ void Log(const char* fmt, ...)
 
 void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 {
-	char* origmsg = NULL, * msg = NULL, * errmsg = NULL;
+	char *origmsg = NULL, *msg = NULL, *errmsg = NULL;
 	DWORD tmp, now;
 
 	if (AllocateErrorMessageA(err, &errmsg) < 0)
@@ -123,7 +125,8 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 	now = timeGetTime();
 	timeEndPeriod(1);
 
-	if (myasprintf(&msg, "%s System time [%10lu]: Thread [%10lu]: %s: error code: 0x%lx (%s)\n", LOG_PREFIX, now, GetCurrentThreadId(), origmsg, err, errmsg) < 0)
+	if (myasprintf(&msg, "%s System time [%10lu]: Thread [%10lu]: %s: error code: 0x%lx (%s)\n", LOG_PREFIX, now,
+			GetCurrentThreadId(), origmsg, err, errmsg) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
 		goto cleanup;

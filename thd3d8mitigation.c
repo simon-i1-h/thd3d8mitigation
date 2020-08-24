@@ -21,7 +21,6 @@
 //   tm_*: timeBeginPeriod and timeEndPeriod required
 
 // XXX TODO review
-// XXX TODO コード整形
 
 enum InitStatus {
 	INITSTATUS_UNINITED,
@@ -38,12 +37,15 @@ static Direct3DCreate8_t g_VanillaDirect3DCreate8;
 static struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
 static struct IDirect3DDevice8ExtraDataTable* g_D3DDev8ExDataTable;
 
-HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
+HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata,
+	CONST RECT* pSourceRect, CONST RECT* pDestRect,
+	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
 	D3DRASTER_STATUS stat;
 	HRESULT ret;
 
-	do {
+	do
+	{
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
 			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
@@ -54,7 +56,8 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 
 	ret = me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
-	do {
+	do
+	{
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
 			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
@@ -66,14 +69,18 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	return ret;
 }
 
-HRESULT ModIDirect3DDevice8PresentWithQueryPerformanceCounter(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
+HRESULT ModIDirect3DDevice8PresentWithQueryPerformanceCounter(IDirect3DDevice8* me,
+	struct IDirect3DDevice8ExtraData* me_exdata,
+	CONST RECT* pSourceRect, CONST RECT* pDestRect,
+	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
 	D3DRASTER_STATUS stat;
 	HRESULT ret;
 	LARGE_INTEGER prevframe_count, nextframe_count, curr_count, curr_count_on_second, count;
 	int curr_frame_on_second;
 
-	do {
+	do
+	{
 		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
 		{
 			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
@@ -88,11 +95,13 @@ HRESULT ModIDirect3DDevice8PresentWithQueryPerformanceCounter(IDirect3DDevice8* 
 	curr_count_on_second.QuadPart = curr_count.QuadPart % me_exdata->PerformanceFrequency.QuadPart;
 	prevframe_count.QuadPart = curr_count.QuadPart - curr_count_on_second.QuadPart;
 	curr_frame_on_second = (int)(curr_count_on_second.QuadPart / me_exdata->CountPerFrame.QuadPart);
-	nextframe_count.QuadPart = prevframe_count.QuadPart + me_exdata->CountPerFrame.QuadPart * curr_frame_on_second + me_exdata->CountPerFrame.QuadPart;
+	nextframe_count.QuadPart = prevframe_count.QuadPart + me_exdata->CountPerFrame.QuadPart * curr_frame_on_second +
+							   me_exdata->CountPerFrame.QuadPart;
 	if (curr_frame_on_second == 0)
 		nextframe_count.QuadPart += me_exdata->RemainderPerSecond;
 
-	do {
+	do
+	{
 		QueryPerformanceCounter(&count);
 		SleepEx(0, TRUE);
 	} while (count.QuadPart < nextframe_count.QuadPart);
@@ -102,15 +111,15 @@ HRESULT ModIDirect3DDevice8PresentWithQueryPerformanceCounter(IDirect3DDevice8* 
 
 BOOL NeedPresentMitigation(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
 {
-	return !me_exdata->pp.Windowed &&
-		(me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
-			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
-			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
-			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
-			me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
+	return !me_exdata->pp.Windowed && (me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
+										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
+										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
+										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
+										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
 }
 
-HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
+HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* pSourceRect, CONST RECT* pDestRect,
+	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
 	struct IDirect3DDevice8ExtraData* me_exdata;
@@ -129,9 +138,11 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	if (!NeedPresentMitigation(me, me_exdata))
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
-		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride,
+			pDirtyRegion);
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_TIMER60)
-		return ModIDirect3DDevice8PresentWithQueryPerformanceCounter(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+		return ModIDirect3DDevice8PresentWithQueryPerformanceCounter(me, me_exdata, pSourceRect, pDestRect,
+			hDestWindowOverride, pDirtyRegion);
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_NORMAL)
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
@@ -203,9 +214,10 @@ struct MeasureFrameRateCallBackArgs {
 	struct IDirect3DDevice8ExtraData* me_exdata;
 };
 
-typedef BOOL(*MeasureFrameRateCallBack_t)(struct MeasureFrameRateCallBackArgs args);
+typedef BOOL (*MeasureFrameRateCallBack_t)(struct MeasureFrameRateCallBackArgs args);
 
-BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callback, struct MeasureFrameRateCallBackArgs args)
+BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callback,
+	struct MeasureFrameRateCallBackArgs args)
 {
 	double absolute_deviation_threshold = 3.0;
 
@@ -262,7 +274,8 @@ BOOL MeasureFrameRateCallBackVsync(struct MeasureFrameRateCallBackArgs args)
 {
 	D3DRASTER_STATUS stat;
 
-	do {
+	do
+	{
 		if (FAILED(args.me->lpVtbl->GetRasterStatus(args.me, &stat)))
 		{
 			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
@@ -271,7 +284,8 @@ BOOL MeasureFrameRateCallBackVsync(struct MeasureFrameRateCallBackArgs args)
 		SleepEx(0, TRUE);
 	} while (stat.InVBlank);
 
-	do {
+	do
+	{
 		if (FAILED(args.me->lpVtbl->GetRasterStatus(args.me, &stat)))
 		{
 			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
@@ -283,14 +297,16 @@ BOOL MeasureFrameRateCallBackVsync(struct MeasureFrameRateCallBackArgs args)
 	return TRUE;
 }
 
-BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, enum ConfigWaitFor* config_wait_for)
+BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata,
+	enum ConfigWaitFor* config_wait_for)
 {
 	double frame_second = 0.0;
 	double frame_second_threshold = 15.0; /* 66.6666... FPS */
 
 	Log("%s: Detecting proper configure...", __FUNCTION__);
 
-	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackNormal, (struct MeasureFrameRateCallBackArgs) { .me = me, .me_exdata = me_exdata }))
+	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackNormal,
+			(struct MeasureFrameRateCallBackArgs){ .me = me, .me_exdata = me_exdata }))
 		return FALSE;
 
 	if (frame_second > frame_second_threshold)
@@ -300,7 +316,8 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 		return TRUE;
 	}
 
-	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackVsync, (struct MeasureFrameRateCallBackArgs) { .me = me, .me_exdata = me_exdata }))
+	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackVsync,
+			(struct MeasureFrameRateCallBackArgs){ .me = me, .me_exdata = me_exdata }))
 		return FALSE;
 
 	if (frame_second > frame_second_threshold)
@@ -315,7 +332,8 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 	return TRUE;
 }
 
-BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata, enum ConfigWaitFor* config_wait_for)
+BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata,
+	enum ConfigWaitFor* config_wait_for)
 {
 	BOOL ret;
 
@@ -326,7 +344,9 @@ BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* 
 	return ret;
 }
 
-HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
+HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+	DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters,
+	IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
 	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
@@ -342,10 +362,12 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		return E_FAIL;
 	}
 
-	if (FAILED(ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface)))
+	if (FAILED(ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags,
+				   pPresentationParameters, ppReturnedDeviceInterface)))
 		return ret;
 
-	// hook IDirect3DDevice8::Present, IDirect3DDevice8::Release (inherit from IUnknown::Release), and IDirect3DDevice8::Reset
+	// hook IDirect3DDevice8::Present, IDirect3DDevice8::Release (inherit from IUnknown::Release), and
+	// IDirect3DDevice8::Reset
 
 	d3ddev8 = *ppReturnedDeviceInterface;
 	vtbl = d3ddev8->lpVtbl;
@@ -356,13 +378,11 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		return E_FAIL;
 	}
 
-	d3ddev8_exdata = (struct IDirect3DDevice8ExtraData){
-		.VanillaPresent = vtbl->Present,
+	d3ddev8_exdata = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = vtbl->Present,
 		.VanillaRelease = vtbl->Release,
 		.VanillaReset = vtbl->Reset,
 		.pp = *pPresentationParameters,
-		.FrameRate = FRAME_RATE
-	};
+		.FrameRate = FRAME_RATE };
 	QueryPerformanceFrequency(&d3ddev8_exdata.PerformanceFrequency);
 	d3ddev8_exdata.RemainderPerSecond = d3ddev8_exdata.PerformanceFrequency.QuadPart % d3ddev8_exdata.FrameRate;
 	d3ddev8_exdata.CountPerFrame.QuadPart = d3ddev8_exdata.PerformanceFrequency.QuadPart / d3ddev8_exdata.FrameRate;
@@ -394,12 +414,15 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	return ret;
 }
 
-HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
+HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow,
+	DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters,
+	IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
 
 	EnterCriticalSection(&g_CS);
-	ret = cs_ModIDirect3D8CreateDeviceImpl(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+	ret = cs_ModIDirect3D8CreateDeviceImpl(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags,
+		pPresentationParameters, ppReturnedDeviceInterface);
 	LeaveCriticalSection(&g_CS);
 	return ret;
 }
@@ -455,10 +478,8 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 		return NULL;
 	}
 
-	d3d8_exdata = (struct IDirect3D8ExtraData){
-		.VanillaCreateDevice = vtbl->CreateDevice,
-		.VanillaRelease = vtbl->Release
-	};
+	d3d8_exdata =
+		(struct IDirect3D8ExtraData){ .VanillaCreateDevice = vtbl->CreateDevice, .VanillaRelease = vtbl->Release };
 	if (!IDirect3D8ExtraDataTableInsert(g_D3D8ExDataTable, ret, d3d8_exdata))
 	{
 		Log("%s: bug, error: IDirect3D8ExtraDataTableInsert failed.", __FUNCTION__);
@@ -494,7 +515,8 @@ int AllocateDataDirPath(char** strp)
 		return -1;
 	}
 
-	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) != 0)
+	if (_splitpath_s(exepath, exedrivepath, sizeof(exedrivepath), exedirpath, sizeof(exedirpath), NULL, 0, NULL, 0) !=
+		0)
 	{
 		Log("%s: error: _splitpath_s failed.", __FUNCTION__);
 		return -1;
@@ -549,12 +571,14 @@ BOOL cs_InitConfig(void)
 	if (!ExistsFile(path))
 		if (WritePrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, path) == 0)
 		{
-			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_wait_for);
+			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__,
+				key_wait_for);
 			goto cleanup;
 		}
 
 	g_ConfigFileWaitFor = config_wait_for_default;
-	if (GetPrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, buf, sizeof(buf), path) >= sizeof(buf) - 1)
+	if (GetPrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, buf, sizeof(buf), path) >=
+		sizeof(buf) - 1)
 		/* no op */;
 	else if (strcmp(buf, value_wait_for_vsync) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_VSYNC;
@@ -734,19 +758,17 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	return ret;
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-	{
 		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#general-best-practices
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Version: " PROGRAM_VERSION "\n");
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\n");
 		InitializeCriticalSection(&g_CS);
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\n");
 		break;
-	}
 	case DLL_PROCESS_DETACH:
 		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#best-practices-for-synchronization
 	case DLL_THREAD_ATTACH:

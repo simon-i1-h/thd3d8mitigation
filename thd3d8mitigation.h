@@ -19,30 +19,18 @@ extern "C" {
 #define FRAME_RATE 60
 
 // type of Direct3DCreate8
-typedef IDirect3D8* (WINAPI* Direct3DCreate8_t)(UINT);
+typedef IDirect3D8*(WINAPI* Direct3DCreate8_t)(UINT);
 
 // type of IDirect3D8::CreateDevice
-typedef HRESULT(__stdcall* IDirect3D8CreateDevice_t)(
-	IDirect3D8*,
-	UINT,
-	D3DDEVTYPE,
-	HWND,
-	DWORD,
-	D3DPRESENT_PARAMETERS*,
-	IDirect3DDevice8**
-);
+typedef HRESULT(__stdcall* IDirect3D8CreateDevice_t)(IDirect3D8*, UINT, D3DDEVTYPE, HWND, DWORD,
+	D3DPRESENT_PARAMETERS*, IDirect3DDevice8**);
 
 // type of IDirect3D8::Release (inherit from IUnknown::Release)
 typedef ULONG(__stdcall* IDirect3D8Release_t)(IDirect3D8*);
 
 // type of IDirect3DDevice8::Present
-typedef HRESULT(__stdcall* IDirect3DDevice8Present_t)(
-	IDirect3DDevice8*,
-	CONST RECT*,
-	CONST RECT*,
-	HWND,
-	CONST RGNDATA*
-);
+typedef HRESULT(__stdcall* IDirect3DDevice8Present_t)(IDirect3DDevice8*, CONST RECT*, CONST RECT*, HWND,
+	CONST RGNDATA*);
 
 // type of IDirect3DDevice8::Release (inherit from IUnknown::Release)
 typedef ULONG(__stdcall* IDirect3DDevice8Release_t)(IDirect3DDevice8*);
@@ -101,15 +89,17 @@ struct IDirect3D8ExtraDataTable;
 struct IDirect3DDevice8ExtraDataTable;
 
 struct IDirect3D8ExtraDataTable* IDirect3D8ExtraDataTableNew(void);
-BOOL IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable *, IDirect3D8*, struct IDirect3D8ExtraData);
-void IDirect3D8ExtraDataTableErase(struct IDirect3D8ExtraDataTable *, IDirect3D8*);
-struct IDirect3D8ExtraData* IDirect3D8ExtraDataTableGet(struct IDirect3D8ExtraDataTable *, IDirect3D8*);
+BOOL IDirect3D8ExtraDataTableInsert(struct IDirect3D8ExtraDataTable*, IDirect3D8*, struct IDirect3D8ExtraData);
+void IDirect3D8ExtraDataTableErase(struct IDirect3D8ExtraDataTable*, IDirect3D8*);
+struct IDirect3D8ExtraData* IDirect3D8ExtraDataTableGet(struct IDirect3D8ExtraDataTable*, IDirect3D8*);
 void IDirect3D8ExtraDataTableShrinkToFit(struct IDirect3D8ExtraDataTable*);
 
 struct IDirect3DDevice8ExtraDataTable* IDirect3DDevice8ExtraDataTableNew(void);
-BOOL IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*, struct IDirect3DDevice8ExtraData);
+BOOL IDirect3DDevice8ExtraDataTableInsert(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*,
+	struct IDirect3DDevice8ExtraData);
 void IDirect3DDevice8ExtraDataTableErase(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*);
-struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(struct IDirect3DDevice8ExtraDataTable*, IDirect3DDevice8*);
+struct IDirect3DDevice8ExtraData* IDirect3DDevice8ExtraDataTableGet(struct IDirect3DDevice8ExtraDataTable*,
+	IDirect3DDevice8*);
 void IDirect3DDevice8ExtraDataTableShrinkToFit(struct IDirect3DDevice8ExtraDataTable*);
 
 #ifdef __cplusplus

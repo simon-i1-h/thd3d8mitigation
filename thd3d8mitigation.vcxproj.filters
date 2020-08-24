@@ -29,6 +29,7 @@
     <None Include="thd3d8mitigation.def">
       <Filter>ソース ファイル</Filter>
     </None>
+    <None Include=".clang-format" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="thd3d8mitigation.h">
