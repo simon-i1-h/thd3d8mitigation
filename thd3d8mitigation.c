@@ -183,8 +183,7 @@ HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMET
 		return E_FAIL;
 	}
 
-	ret = me_exdata->VanillaReset(me, pPresentationParameters);
-	if (SUCCEEDED(ret))
+	if (SUCCEEDED(ret = me_exdata->VanillaReset(me, pPresentationParameters)))
 		me_exdata->pp = *pPresentationParameters;
 
 	return ret;
@@ -352,8 +351,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		return E_FAIL;
 	}
 
-	ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
-	if (FAILED(ret))
+	if (FAILED(ret = me_exdata->VanillaCreateDevice(me, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface)))
 		return ret;
 
 	// hook IDirect3DDevice8::Present, IDirect3DDevice8::Release (inherit from IUnknown::Release), and IDirect3DDevice8::Reset
