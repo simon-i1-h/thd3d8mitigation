@@ -622,7 +622,7 @@ BOOL InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 	return TRUE;
 }
 
-BOOL cs_LogInitImpl(void)
+BOOL cs_LogInit(void)
 {
 	char* logpath;
 	DWORD err;
@@ -645,42 +645,17 @@ BOOL cs_LogInitImpl(void)
 	return TRUE;
 }
 
-BOOL cs_LogInit(void)
-{
-	static enum InitStatus g_initstatus = INITSTATUS_UNINITED;
-
-	BOOL ret;
-
-	switch (g_initstatus)
-	{
-	case INITSTATUS_SUCCEEDED:
-		return TRUE;
-	case INITSTATUS_FAILED:
-		return FALSE;
-	case INITSTATUS_UNINITED:
-		break;
-	default:
-		Log("%s: bug, error: unreachable.", __FUNCTION__);
-		return FALSE;
-	}
-
-	ret = cs_LogInitImpl();
-	g_initstatus = ret ? INITSTATUS_SUCCEEDED : INITSTATUS_FAILED;
-	return ret;
-}
-
-BOOL LogInit(void)
-{
-	BOOL ret;
-
-	EnterCriticalSection(&g_CS);
-	ret = cs_LogInit();
-	LeaveCriticalSection(&g_CS);
-	return ret;
-}
-
 BOOL cs_InitImpl(void)
 {
+	if (!cs_LogInit())
+	{
+		Log("%s: error: log initialization failed.", __FUNCTION__);
+		return FALSE;
+	}
+	// これ以降はログがファイルにも記録される
+
+	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
+
 	if (!InitD3D8Handle(&g_D3D8Handle))
 	{
 		Log("%s: error: InitD3D8Handle failed.", __FUNCTION__);
@@ -744,16 +719,6 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 	IDirect3D8* ret;
 
 	// 実質的なエントリーポイントなので、最初は初期化処理を行う
-
-	if (!LogInit())
-	{
-		Log("%s: error: log initialization failed.", __FUNCTION__);
-		return NULL;
-	}
-	// これ以降はログがファイルにも記録される
-
-	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
-
 	if (!Init())
 	{
 		Log("%s: error: initialization failed.", __FUNCTION__);
