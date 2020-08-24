@@ -32,7 +32,6 @@ enum InitStatus {
 CRITICAL_SECTION g_CS;
 
 static enum ConfigWaitFor g_ConfigFileWaitFor;
-static BOOL g_ConfigFileUnlockIncompatibleOptions;
 
 static HMODULE g_D3D8Handle;
 static Direct3DCreate8_t g_VanillaDirect3DCreate8;
@@ -301,14 +300,6 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 		return TRUE;
 	}
 
-	// unlock_incompatible_optionsが無効な時はtimer60を有効にしない
-	if (!g_ConfigFileUnlockIncompatibleOptions)
-	{
-		*config_wait_for = CONFIG_WAITFOR_VSYNC;
-		Log("%s: wait_for config: vsync", __FUNCTION__);
-		return TRUE;
-	}
-
 	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackVsync, (struct MeasureFrameRateCallBackArgs) { .me = me, .me_exdata = me_exdata }))
 		return FALSE;
 
@@ -535,9 +526,7 @@ BOOL ExistsFile(char* path)
 
 BOOL cs_InitConfig(void)
 {
-	char* section_global = "global";
 	char* section_present = "presentation";
-	char* key_unlock_incompatible_options = "unlock_incompatible_options";
 	char* key_wait_for = "wait_for";
 	char* value_wait_for_vsync = "vsync";
 	char* value_wait_for_timer60 = "timer60";
@@ -558,28 +547,18 @@ BOOL cs_InitConfig(void)
 	}
 
 	if (!ExistsFile(path))
-	{
-		if (WritePrivateProfileStringA(section_global, key_unlock_incompatible_options, "0", path) == 0)
-		{
-			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_unlock_incompatible_options);
-			goto cleanup;
-		}
 		if (WritePrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, path) == 0)
 		{
 			LogWithErrorCode(GetLastError(), "%s: error: WritePrivateProfileStringA (%s) failed.", __FUNCTION__, key_wait_for);
 			goto cleanup;
 		}
-	}
-
-	g_ConfigFileUnlockIncompatibleOptions = !!GetPrivateProfileIntA(section_global, key_unlock_incompatible_options, 0, path);
-	Log("%s: config file %s: %d", __FUNCTION__, key_unlock_incompatible_options, g_ConfigFileUnlockIncompatibleOptions);
 
 	g_ConfigFileWaitFor = config_wait_for_default;
 	if (GetPrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, buf, sizeof(buf), path) >= sizeof(buf) - 1)
 		/* no op */;
 	else if (strcmp(buf, value_wait_for_vsync) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_VSYNC;
-	else if ((strcmp(buf, value_wait_for_timer60) == 0) && g_ConfigFileUnlockIncompatibleOptions)
+	else if (strcmp(buf, value_wait_for_timer60) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_TIMER60;
 	else if (strcmp(buf, value_wait_for_normal) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_NORMAL;
