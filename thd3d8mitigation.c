@@ -12,14 +12,6 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-// Naming convention:
-//   cs_*: Critical section
-//   g_*: Global variable
-//   *_t: Type identifier
-//   Mod*: Modified
-//   V*: Function with va_list
-//   tm_*: timeBeginPeriod and timeEndPeriod required
-
 // XXX TODO review
 
 enum InitStatus {

@@ -9,8 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// XXX TODO Logをlog.cに分離するかも。その場合、LogInitもそちらの移す。
-
 HANDLE g_LogFile = NULL;
 
 int myvasprintf(char** strp, const char* fmt, va_list ap)
@@ -154,7 +152,6 @@ void LogWithErrorCode(DWORD err, const char* fmt, ...)
 	va_end(ap);
 }
 
-// XXX TODO proper exit
 __declspec(noreturn) void Fatal(int exitcode, const char* fmt, ...)
 {
 	va_list ap;
