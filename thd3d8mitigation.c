@@ -12,7 +12,7 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-// XXX TODO review
+/* XXX TODO review */
 
 enum InitStatus {
 	INITSTATUS_UNINITED,
@@ -113,10 +113,10 @@ BOOL NeedPresentMitigation(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* pSourceRect, CONST RECT* pDestRect,
 	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
-	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
+	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
-	// load from critical section
+	/* load from critical section */
 	EnterCriticalSection(&g_CS);
 	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
 	LeaveCriticalSection(&g_CS);
@@ -145,7 +145,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
 {
 	ULONG ret;
-	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
+	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
@@ -176,7 +176,7 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
 	HRESULT ret;
-	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
+	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
@@ -341,7 +341,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
-	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
+	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3D8ExtraData* me_exdata;
 	DWORD orig_protect;
 	IDirect3DDevice8* d3ddev8;
@@ -358,8 +358,10 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 				   pPresentationParameters, ppReturnedDeviceInterface)))
 		return ret;
 
-	// hook IDirect3DDevice8::Present, IDirect3DDevice8::Release (inherit from IUnknown::Release), and
-	// IDirect3DDevice8::Reset
+	/*
+	 * hook IDirect3DDevice8::Present, IDirect3DDevice8::Release (inherit from IUnknown::Release), and
+	 * IDirect3DDevice8::Reset
+	 */
 
 	d3ddev8 = *ppReturnedDeviceInterface;
 	vtbl = d3ddev8->lpVtbl;
@@ -399,7 +401,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	vtbl->Release = ModIDirect3DDevice8Release;
 	vtbl->Reset = ModIDirect3DDevice8Reset;
 
-	// best effort
+	/* best effort */
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
 		LogWithErrorCode(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
 
@@ -422,7 +424,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 ULONG __stdcall cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
 {
 	ULONG ret;
-	// me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。
+	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3D8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
@@ -460,7 +462,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	if ((ret = g_VanillaDirect3DCreate8(SDKVersion)) == NULL)
 		return NULL;
 
-	// hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release)
+	/* hook IDirect3D8::CreateDevice and IDirect3D8::Release (inherit from IUnknown::Release) */
 
 	vtbl = ret->lpVtbl;
 
@@ -481,7 +483,7 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 	vtbl->CreateDevice = ModIDirect3D8CreateDevice;
 	vtbl->Release = ModIDirect3D8Release;
 
-	// best effort
+	/* best effort */
 	if (!VirtualProtect(vtbl, sizeof(*vtbl), orig_protect, &orig_protect))
 		LogWithErrorCode(GetLastError(), "%s: warning: VirtualProtect (original protect) failed.", __FUNCTION__);
 
@@ -668,7 +670,7 @@ BOOL cs_InitImpl(void)
 		Log("%s: error: log initialization failed.", __FUNCTION__);
 		return FALSE;
 	}
-	// これ以降はログがファイルにも記録される
+	/* これ以降はログがファイルにも記録される */
 
 	Log("%s: Version: %s", __FUNCTION__, PROGRAM_VERSION);
 
@@ -734,14 +736,12 @@ IDirect3D8* WINAPI ModDirect3DCreate8(UINT SDKVersion)
 {
 	IDirect3D8* ret;
 
-	// 実質的なエントリーポイントなので、最初は初期化処理を行う
+	/* 実質的なエントリーポイントなので、最初は初期化処理を行う */
 	if (!Init())
 	{
 		Log("%s: error: initialization failed.", __FUNCTION__);
 		return NULL;
 	}
-
-	// 本体
 
 	EnterCriticalSection(&g_CS);
 	ret = cs_ModDirect3DCreate8Impl(SDKVersion);
@@ -755,14 +755,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#general-best-practices
+		/* https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#general-best-practices */
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Version: " PROGRAM_VERSION "\n");
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\n");
 		InitializeCriticalSection(&g_CS);
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\n");
 		break;
 	case DLL_PROCESS_DETACH:
-		// https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#best-practices-for-synchronization
+		/* https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#best-practices-for-synchronization */
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 		break;

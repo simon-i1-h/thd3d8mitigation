@@ -14,28 +14,28 @@ extern "C" {
 
 #define PROGRAM_VERSION "0.1"
 
-// thd3d8mitigation.c
+/* thd3d8mitigation.c */
 
 #define FRAME_RATE 60
 
-// type of Direct3DCreate8
+/* type of Direct3DCreate8 */
 typedef IDirect3D8*(WINAPI* Direct3DCreate8_t)(UINT);
 
-// type of IDirect3D8::CreateDevice
+/* type of IDirect3D8::CreateDevice */
 typedef HRESULT(__stdcall* IDirect3D8CreateDevice_t)(IDirect3D8*, UINT, D3DDEVTYPE, HWND, DWORD,
 	D3DPRESENT_PARAMETERS*, IDirect3DDevice8**);
 
-// type of IDirect3D8::Release (inherit from IUnknown::Release)
+/* type of IDirect3D8::Release (inherit from IUnknown::Release) */
 typedef ULONG(__stdcall* IDirect3D8Release_t)(IDirect3D8*);
 
-// type of IDirect3DDevice8::Present
+/* type of IDirect3DDevice8::Present */
 typedef HRESULT(__stdcall* IDirect3DDevice8Present_t)(IDirect3DDevice8*, CONST RECT*, CONST RECT*, HWND,
 	CONST RGNDATA*);
 
-// type of IDirect3DDevice8::Release (inherit from IUnknown::Release)
+/* type of IDirect3DDevice8::Release (inherit from IUnknown::Release) */
 typedef ULONG(__stdcall* IDirect3DDevice8Release_t)(IDirect3DDevice8*);
 
-// type of IDirect3DDevice8::Reset
+/* type of IDirect3DDevice8::Reset */
 typedef HRESULT(__stdcall* IDirect3DDevice8Reset_t)(IDirect3DDevice8*, D3DPRESENT_PARAMETERS*);
 
 enum ConfigWaitFor {
@@ -69,7 +69,7 @@ struct IDirect3DDevice8ExtraData {
 
 extern CRITICAL_SECTION g_CS;
 
-// util.c
+/* util.c */
 
 #define LOG_PREFIX "[thd3d8mitigation]"
 
@@ -83,7 +83,7 @@ void Log(const char*, ...);
 void LogWithErrorCode(DWORD, const char*, ...);
 __declspec(noreturn) void Fatal(int, const char*, ...);
 
-// extradatatable.cpp
+/* extradatatable.cpp */
 
 struct IDirect3D8ExtraDataTable;
 struct IDirect3DDevice8ExtraDataTable;
