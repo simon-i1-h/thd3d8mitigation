@@ -50,9 +50,8 @@ int AllocateErrorMessageA(DWORD code, char** strp)
 	char* errmsg;
 	int len;
 
-	/* XXX TODO review */
 	if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errmsg, 0, NULL) == 0)
+			NULL, code, 0, (LPSTR)&errmsg, 0, NULL) == 0)
 		return -1;
 	len = myasprintf(strp, "%s", errmsg);
 	LocalFree(errmsg);
