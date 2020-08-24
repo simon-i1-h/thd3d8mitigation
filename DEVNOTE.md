@@ -14,6 +14,8 @@ timeGetTimeを使っている箇所はオーバーフローを考慮していな
 
 thd3d8mitigationはBOM付きUTF-8で書かれているが、東方紅魔郷はShiftJISを前提としているので、文字列リテラルに非ASCII文字を含むべきではない。
 
+ビルドに使用するファイル(ソースファイルやプロジェクトファイルなど)の文字コードはBOM付きUTF-8とする。.clang-formatや.gitignoreなどのその他の設定ファイルやドキュメントはBOM無しUTF-8とする。
+
 # 命名規則
 
 - cs_\*: Critical section
