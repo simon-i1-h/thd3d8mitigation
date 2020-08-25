@@ -31,3 +31,4 @@ thd3d8mitigationはBOM付きUTF-8で書かれているが、東方紅魔郷はSh
 
 - 回復不能なエラー時にutil.c::FatalなどはExitProcessではなくTerminateProcessなどを呼び出すべきかもしれない。
 - 設定編集ソフト(custom.exeみたいなやつ)があった方がいいかもしれない。
+- フルスクリーンモード時に起動画面で端が欠ける問題を緩和したい。少なくとも紅魔郷と妖々夢で確認済み。
