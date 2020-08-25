@@ -16,6 +16,8 @@ thd3d8mitigationはBOM付きUTF-8で書かれているが、東方紅魔郷はSh
 
 ビルドに使用するファイル(ソースファイルやプロジェクトファイルなど)の文字コードはASCIIもしくはBOM付きUTF-8とする。.clang-formatや.gitignoreなどのその他の設定ファイルやドキュメントは(BOM無し)UTF-8とする。
 
+改行コードはCRLFとする。
+
 # 命名規則
 
 - cs_\*: Critical section
