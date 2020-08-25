@@ -262,7 +262,7 @@ BOOL MeasureFrameRateCallBackNormal(struct MeasureFrameRateCallBackArgs args)
 	return SUCCEEDED(args.me_exdata->VanillaPresent(args.me, NULL, NULL, NULL, NULL));
 }
 
-BOOL MeasureFrameRateCallBackVsync(struct MeasureFrameRateCallBackArgs args)
+BOOL MeasureFrameRateCallBackVSync(struct MeasureFrameRateCallBackArgs args)
 {
 	D3DRASTER_STATUS stat;
 
@@ -308,7 +308,7 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 		return TRUE;
 	}
 
-	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackVsync,
+	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackVSync,
 			(struct MeasureFrameRateCallBackArgs){ .me = me, .me_exdata = me_exdata }))
 		return FALSE;
 
