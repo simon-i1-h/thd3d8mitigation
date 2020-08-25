@@ -30,3 +30,4 @@ thd3d8mitigationはBOM付きUTF-8で書かれているが、東方紅魔郷はSh
 # TODO
 
 - 回復不能なエラー時にutil.c::FatalなどはExitProcessではなくTerminateProcessなどを呼び出すべきかもしれない。
+- 設定編集ソフト(custom.exeみたいなやつ)があった方がいいかもしれない。
