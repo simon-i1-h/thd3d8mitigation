@@ -214,6 +214,7 @@ BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callb
 	return TRUE;
 }
 
+// XXX TODO MeasureFrameRateに統合
 BOOL MeasureFrameRateCallBackNormal(struct MeasureFrameRateCallBackArgs args)
 {
 	return SUCCEEDED(args.me_exdata->VanillaPresent(args.me, NULL, NULL, NULL, NULL));
