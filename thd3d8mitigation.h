@@ -54,15 +54,6 @@ struct IDirect3DDevice8ExtraData {
 	IDirect3DDevice8Release_t VanillaRelease;
 	IDirect3DDevice8Reset_t VanillaReset;
 	D3DPRESENT_PARAMETERS pp;
-	/*
-	 * PerformanceFrequency == CountPerFrame * FrameRate + RemainderPerSecond
-	 * RemainderPerSecond == PerformanceFrequency % FrameRate
-	 * CountPerFrame == PerformanceFrequency / FrameRate
-	 */
-	LARGE_INTEGER PerformanceFrequency;
-	LARGE_INTEGER CountPerFrame;
-	int FrameRate;
-	int RemainderPerSecond;
 	enum ConfigWaitFor ConfigWaitFor;
 };
 

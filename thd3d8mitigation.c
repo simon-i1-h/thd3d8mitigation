@@ -279,11 +279,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	d3ddev8_exdata = (struct IDirect3DDevice8ExtraData){ .VanillaPresent = vtbl->Present,
 		.VanillaRelease = vtbl->Release,
 		.VanillaReset = vtbl->Reset,
-		.pp = *pPresentationParameters,
-		.FrameRate = FRAME_RATE };
-	QueryPerformanceFrequency(&d3ddev8_exdata.PerformanceFrequency);
-	d3ddev8_exdata.RemainderPerSecond = d3ddev8_exdata.PerformanceFrequency.QuadPart % d3ddev8_exdata.FrameRate;
-	d3ddev8_exdata.CountPerFrame.QuadPart = d3ddev8_exdata.PerformanceFrequency.QuadPart / d3ddev8_exdata.FrameRate;
+		.pp = *pPresentationParameters };
 	if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO && NeedPresentMitigation(d3ddev8, &d3ddev8_exdata))
 	{
 		if (!DetectProperConfig(d3ddev8, &d3ddev8_exdata, &d3ddev8_exdata.ConfigWaitFor))
