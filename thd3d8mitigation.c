@@ -158,15 +158,7 @@ HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARA
 	return ret;
 }
 
-struct MeasureFrameRateCallBackArgs {
-	IDirect3DDevice8* me;
-	struct IDirect3DDevice8ExtraData* me_exdata;
-};
-
-typedef BOOL (*MeasureFrameRateCallBack_t)(struct MeasureFrameRateCallBackArgs args);
-
-BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callback,
-	struct MeasureFrameRateCallBackArgs args)
+BOOL MeasureNormalFrameRate(double* ret_frame_second, IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
 {
 	double absolute_deviation_threshold = 3.0;
 
@@ -180,7 +172,7 @@ BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callb
 	for (i = 0; i < ARRAY_SIZE(frame_second_list); i++)
 	{
 		starttime = timeGetTime();
-		if (!callback(args))
+		if (FAILED(me_exdata->VanillaPresent(me, NULL, NULL, NULL, NULL)))
 			return FALSE;
 		endtime = timeGetTime();
 		frame_second_list[i] = endtime - starttime;
@@ -203,7 +195,7 @@ BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callb
 			break;
 
 		starttime = timeGetTime();
-		if (!callback(args))
+		if (FAILED(me_exdata->VanillaPresent(me, NULL, NULL, NULL, NULL)))
 			return FALSE;
 		endtime = timeGetTime();
 
@@ -214,12 +206,6 @@ BOOL MeasureFrameRate(double* ret_frame_second, MeasureFrameRateCallBack_t callb
 	return TRUE;
 }
 
-// XXX TODO MeasureFrameRateに統合
-BOOL MeasureFrameRateCallBackNormal(struct MeasureFrameRateCallBackArgs args)
-{
-	return SUCCEEDED(args.me_exdata->VanillaPresent(args.me, NULL, NULL, NULL, NULL));
-}
-
 BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata,
 	enum ConfigWaitFor* config_wait_for)
 {
@@ -228,8 +214,7 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 
 	Log("%s: Detecting proper configure...", __FUNCTION__);
 
-	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackNormal,
-			(struct MeasureFrameRateCallBackArgs){ .me = me, .me_exdata = me_exdata }))
+	if (!MeasureNormalFrameRate(&frame_second, me, me_exdata))
 		return FALSE;
 
 	if (frame_second > frame_second_threshold)
