@@ -65,7 +65,7 @@ void VLog(const char* fmt, va_list ap)
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myvasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myvasprintf failed.\r\n");
 		return;
 	}
 
@@ -73,10 +73,10 @@ void VLog(const char* fmt, va_list ap)
 	now = timeGetTime();
 	timeEndPeriod(1);
 
-	if (myasprintf(&msg, "%s[System time: %010lu][Thread: %010lu]: %s\n", LOG_PREFIX, now, GetCurrentThreadId(),
+	if (myasprintf(&msg, "%s[System time: %010lu][Thread: %010lu]: %s\r\n", LOG_PREFIX, now, GetCurrentThreadId(),
 			origmsg) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\r\n");
 		goto cleanup;
 	}
 
@@ -84,7 +84,7 @@ void VLog(const char* fmt, va_list ap)
 	EnterCriticalSection(&g_CS);
 	if (g_LogFile != NULL)
 		if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
-			OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
+			OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\r\n");
 	LeaveCriticalSection(&g_CS);
 
 cleanup:
@@ -108,13 +108,13 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 
 	if (AllocateErrorMessageA(err, &errmsg) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: AllocateErrorMessage failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: AllocateErrorMessage failed.\r\n");
 		return;
 	}
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myvasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myvasprintf failed.\r\n");
 		goto cleanup;
 	}
 
@@ -122,10 +122,10 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 	now = timeGetTime();
 	timeEndPeriod(1);
 
-	if (myasprintf(&msg, "%s System time [%10lu]: Thread [%10lu]: %s: error code: 0x%lx (%s)\n", LOG_PREFIX, now,
+	if (myasprintf(&msg, "%s System time [%10lu]: Thread [%10lu]: %s: error code: 0x%lx (%s)\r\n", LOG_PREFIX, now,
 			GetCurrentThreadId(), origmsg, err, errmsg) < 0)
 	{
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\r\n");
 		goto cleanup;
 	}
 
@@ -133,7 +133,7 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 	EnterCriticalSection(&g_CS);
 	if (g_LogFile != NULL)
 		if (!WriteFile(g_LogFile, msg, strlen(msg), &tmp, NULL))
-			OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\n");
+			OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: WriteFile failed.\r\n");
 	LeaveCriticalSection(&g_CS);
 
 cleanup:
