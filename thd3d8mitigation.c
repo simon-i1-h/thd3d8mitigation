@@ -61,46 +61,6 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	return ret;
 }
 
-HRESULT ModIDirect3DDevice8PresentWithQueryPerformanceCounter(IDirect3DDevice8* me,
-	struct IDirect3DDevice8ExtraData* me_exdata,
-	CONST RECT* pSourceRect, CONST RECT* pDestRect,
-	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
-{
-	D3DRASTER_STATUS stat;
-	HRESULT ret;
-	LARGE_INTEGER prevframe_count, nextframe_count, curr_count, curr_count_on_second, count;
-	int curr_frame_on_second;
-
-	do
-	{
-		if (FAILED(me->lpVtbl->GetRasterStatus(me, &stat)))
-		{
-			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
-			return E_FAIL;
-		}
-		SleepEx(0, TRUE);
-	} while (stat.InVBlank);
-
-	ret = me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-
-	QueryPerformanceCounter(&curr_count);
-	curr_count_on_second.QuadPart = curr_count.QuadPart % me_exdata->PerformanceFrequency.QuadPart;
-	prevframe_count.QuadPart = curr_count.QuadPart - curr_count_on_second.QuadPart;
-	curr_frame_on_second = (int)(curr_count_on_second.QuadPart / me_exdata->CountPerFrame.QuadPart);
-	nextframe_count.QuadPart = prevframe_count.QuadPart + me_exdata->CountPerFrame.QuadPart * curr_frame_on_second +
-							   me_exdata->CountPerFrame.QuadPart;
-	if (curr_frame_on_second == 0)
-		nextframe_count.QuadPart += me_exdata->RemainderPerSecond;
-
-	do
-	{
-		QueryPerformanceCounter(&count);
-		SleepEx(0, TRUE);
-	} while (count.QuadPart < nextframe_count.QuadPart);
-
-	return ret;
-}
-
 BOOL NeedPresentMitigation(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
 {
 	return !me_exdata->pp.Windowed && (me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
@@ -132,9 +92,6 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride,
 			pDirtyRegion);
-	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_TIMER60)
-		return ModIDirect3DDevice8PresentWithQueryPerformanceCounter(me, me_exdata, pSourceRect, pDestRect,
-			hDestWindowOverride, pDirtyRegion);
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_NORMAL)
 		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
@@ -262,33 +219,6 @@ BOOL MeasureFrameRateCallBackNormal(struct MeasureFrameRateCallBackArgs args)
 	return SUCCEEDED(args.me_exdata->VanillaPresent(args.me, NULL, NULL, NULL, NULL));
 }
 
-BOOL MeasureFrameRateCallBackVSync(struct MeasureFrameRateCallBackArgs args)
-{
-	D3DRASTER_STATUS stat;
-
-	do
-	{
-		if (FAILED(args.me->lpVtbl->GetRasterStatus(args.me, &stat)))
-		{
-			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
-			return FALSE;
-		}
-		SleepEx(0, TRUE);
-	} while (stat.InVBlank);
-
-	do
-	{
-		if (FAILED(args.me->lpVtbl->GetRasterStatus(args.me, &stat)))
-		{
-			Log("%s: error: IDirect3DDevice8::GetRasterStatus failed.", __FUNCTION__);
-			return FALSE;
-		}
-		SleepEx(0, TRUE);
-	} while (!stat.InVBlank);
-
-	return TRUE;
-}
-
 BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata,
 	enum ConfigWaitFor* config_wait_for)
 {
@@ -308,19 +238,8 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 		return TRUE;
 	}
 
-	if (!MeasureFrameRate(&frame_second, MeasureFrameRateCallBackVSync,
-			(struct MeasureFrameRateCallBackArgs){ .me = me, .me_exdata = me_exdata }))
-		return FALSE;
-
-	if (frame_second > frame_second_threshold)
-	{
-		*config_wait_for = CONFIG_WAITFOR_VSYNC;
-		Log("%s: wait_for config: vsync", __FUNCTION__);
-		return TRUE;
-	}
-
-	*config_wait_for = CONFIG_WAITFOR_TIMER60;
-	Log("%s: wait_for config: timer60", __FUNCTION__);
+	*config_wait_for = CONFIG_WAITFOR_VSYNC;
+	Log("%s: wait_for config: vsync", __FUNCTION__);
 	return TRUE;
 }
 
@@ -545,7 +464,6 @@ BOOL cs_InitConfig(void)
 	char* section_present = "presentation";
 	char* key_wait_for = "wait_for";
 	char* value_wait_for_vsync = "vsync";
-	char* value_wait_for_timer60 = "timer60";
 	char* value_wait_for_normal = "normal";
 	char* value_wait_for_auto = "auto";
 
@@ -576,8 +494,6 @@ BOOL cs_InitConfig(void)
 		/* no op */;
 	else if (strcmp(buf, value_wait_for_vsync) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_VSYNC;
-	else if (strcmp(buf, value_wait_for_timer60) == 0)
-		g_ConfigFileWaitFor = CONFIG_WAITFOR_TIMER60;
 	else if (strcmp(buf, value_wait_for_normal) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_NORMAL;
 	else if (strcmp(buf, value_wait_for_auto) == 0)

@@ -40,7 +40,6 @@ typedef HRESULT(__stdcall* IDirect3DDevice8Reset_t)(IDirect3DDevice8*, D3DPRESEN
 
 enum ConfigWaitFor {
 	CONFIG_WAITFOR_VSYNC,
-	CONFIG_WAITFOR_TIMER60,
 	CONFIG_WAITFOR_NORMAL,
 	CONFIG_WAITFOR_AUTO
 };
