@@ -237,7 +237,6 @@ BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* 
 	timeBeginPeriod(1);
 	ret = tm_DetectProperConfig(me, me_exdata, config_wait_for);
 	timeEndPeriod(1);
-
 	return ret;
 }
 
