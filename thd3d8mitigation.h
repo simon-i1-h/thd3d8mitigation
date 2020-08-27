@@ -6,8 +6,6 @@
 #define CINTERFACE
 #include <d3d8.h>
 
-#include <stdarg.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -66,7 +64,6 @@ extern CRITICAL_SECTION g_CS;
 /* nullable */
 extern HANDLE g_LogFile;
 
-int myvasprintf(char**, const char*, va_list);
 int myasprintf(char**, const char*, ...);
 int AllocateErrorMessageA(DWORD, char**);
 void Log(const char*, ...);
