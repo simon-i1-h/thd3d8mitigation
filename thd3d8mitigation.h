@@ -14,8 +14,6 @@ extern "C" {
 
 /* thd3d8mitigation.c */
 
-#define FRAME_RATE 60
-
 /* type of Direct3DCreate8 */
 typedef IDirect3D8*(WINAPI* Direct3DCreate8_t)(UINT);
 
