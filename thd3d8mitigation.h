@@ -63,7 +63,6 @@ extern CRITICAL_SECTION g_CS;
 extern HANDLE g_LogFile;
 
 int myasprintf(char**, const char*, ...);
-int AllocateErrorMessageA(DWORD, char**);
 void Log(const char*, ...);
 void LogWithErrorCode(DWORD, const char*, ...);
 __declspec(noreturn) void Fatal(int, const char*, ...);
