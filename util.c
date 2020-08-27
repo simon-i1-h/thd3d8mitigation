@@ -66,7 +66,7 @@ void VLog(const char* fmt, va_list ap)
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myvasprintf failed.\r\n");
-		return;
+		goto cleanup;
 	}
 
 	timeBeginPeriod(1);
@@ -109,7 +109,7 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 	if (AllocateErrorMessageA(err, &errmsg) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: AllocateErrorMessage failed.\r\n");
-		return;
+		goto cleanup;
 	}
 
 	if (myvasprintf(&origmsg, fmt, ap) < 0)
