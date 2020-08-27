@@ -217,7 +217,10 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 	Log("%s: Detecting proper configure...", __FUNCTION__);
 
 	if (!MeasureNormalFrameSecond(&frame_second, me, me_exdata))
+	{
+		Log("%s: MeasureNormalFrameSecond failed.", __FUNCTION__);
 		return FALSE;
+	}
 
 	if (frame_second > frame_second_threshold)
 	{
