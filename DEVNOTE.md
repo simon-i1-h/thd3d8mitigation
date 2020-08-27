@@ -1,18 +1,44 @@
+# 設計
+
+ゲームが利用するd3d8.dllよりも優先度が高いDLL検索パスに同名のDLLを置くことで、ゲームのDirect3D 8 API呼び出しに割り込む。
+
+IDirect3D8およびIDirect3DDevice8オブジェクトを作成するAPI呼び出しに割り込んで、各オブジェクトのメソッドの処理を適宜差し替える。
+
+IDirect3D8およびIDirect3DDevice8オブジェクトに1対1で紐付く拡張プロパティをエクストラデータと呼び、各オブジェクトの作成と解放に合わせて作成と解放を行う。エクストラデータはエクストラデータテーブルという領域に格納されている。エクストラデータは主に紐付くオブジェクトのメソッド内で適宜便利に利用する。
+
 # エラー処理
 
-データファイルの破壊を防ぐため、大半のエラーは即座にクラッシュさせず、呼び出し元に報告するかログを出力したあと呼び出し元にNULLなどの無効な値を返す。ただし、ヒープメモリーの確保エラーとC++コードでの想定外の例外は(暗黙で引き起こされるスタックメモリーの確保エラーと同様に)回復不能と見做して即座にクラッシュさせる。
+データファイルの破壊を防ぐため、大半のエラーは即座にクラッシュさせず、呼び出し元に報告するか、ログを出力したあと呼び出し元にNULLやFALSEなどの否定的な値を返す。ただし、ヒープメモリーの確保エラーとC++コードでの想定外の例外は(スタックオーバーフローなどと同様に)回復不能と見做して即座にクラッシュさせる。
 
 # 排他制御
 
-me_exdataはmeに1対1で紐づく拡張プロパティと考えられ、meの排他制御の責任は呼び出し先ではなく呼び出し元にあるので、meのメソッド内ではme_exdataのデータ競合や競合状態について考えなくてよい。
+クリティカルセクション(cs_接頭辞が付く関数)やクリティカルセクションオブジェクトを除くグローバル変数(ほとんどの場合g_接頭辞が付く変数)を呼び出したり参照したりする場合、呼び出し側はクリティカルセクションであるかクリティカルセクションオブジェクトを通してEnterCriticalSectionおよびLeaveCriticalSectionで排他制御を行う必要がある。現状、クリティカルセクションオブジェクトはg_CSのみである。
+
+IDirect3D8およびIDirect3DDevice8オブジェクトのメソッド内について、エクストラデータの排他制御の責任は紐付くオブジェクトと同様呼び出し元にあると考えられるので、紐付くオブジェクトのメソッド内ではエクストラデータのデータ競合や競合状態について考えなくてよい。
+
+```
+HRESULT __stdcall ModIDirect3DDevice8MethodFoo(IDirect3DDevice8* me)
+{
+	/*
+	 * me_exdataはmeに1対1で紐づく拡張プロパティであり、meの排他制御の責任はmeのメソッドの呼び出し元にあるので、
+	 * meのメソッド内ではme_exdataのデータ競合や競合状態について考えなくてよい。
+	 */
+	struct IDirect3DDevice8ExtraData* me_exdata;
+
+	EnterCriticalSection(&g_CS);
+	me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me);
+	LeaveCriticalSection(&g_CS);
+
+	/* これ以降、この関数内ではme_exdataのメンバーを排他制御なしで読み書きしてよい。 */
+```
 
 # 時刻およびカウンター
 
-timeGetTimeを使っている箇所はオーバーフローを考慮していないので、Windowsを起動してからだいたい49日を超えるとおかしくなる。
+timeGetTimeを使っている箇所はオーバーフローを考慮していないので、Windowsを起動してからだいたい49日を超えるとおかしくなる。少なくとも紅魔郷は似たような仕様があるはずなのでおそらく問題ないが、他の作品での影響は不明。
 
 # 文字コード
 
-thd3d8mitigationはBOM付きUTF-8で書かれているが、東方紅魔郷はShiftJISを前提としているので、文字列リテラルに非ASCII文字を含むべきではない。
+thd3d8mitigationのソースコードはBOM付きUTF-8で書かれているが、紅魔郷はShiftJISを前提としているので、文字列リテラルに非ASCII文字を含むべきではない。
 
 ビルドに使用するファイル(ソースファイルやプロジェクトファイルなど)の文字コードはASCIIもしくはBOM付きUTF-8とする。.clang-formatや.gitignoreなどのその他の設定ファイルやドキュメントは(BOM無し)UTF-8とする。
 
@@ -20,12 +46,19 @@ thd3d8mitigationはBOM付きUTF-8で書かれているが、東方紅魔郷はSh
 
 # 命名規則
 
-- cs_\*: Critical section
-- g_\*: Global variable
-- \*_t: Type identifier
-- Mod\*: Modified
-- V\*: Function with va_list
-- tm_\*: timeBeginPeriod and timeEndPeriod required
+- cs_\*: クリティカルセクション。呼び出し側はクリティカルセクションであるかEnterCriticalSectionおよびLeaveCriticalSectionで排他制御を行う必要がある。
+- g_\*: グローバル変数。CRITICAL_SECTION型を除いて、呼び出し側はクリティカルセクションであるかEnterCriticalSectionおよびLeaveCriticalSectionで排他制御を行う必要がある。
+- \*_t: 主にtypedefした型識別子。
+- Mod\*: この接頭辞に続く名前の処理に割り込んで追加の処理を行う関数。
+- V\*: va_listを引数に取る関数。va_listではなく可変長引数を取る版の関数から呼び出されることが多い。
+- tm_\*: 呼び出し側はtimeBeginPeriodおよびtimeEndPeriodで一時的にタイマーの精度を上げるのが望ましい。
+
+# その他
+
+- 特にutil.cの各関数は相互再帰に陥らないように注意すること。
+- ログはデバッグ出力(DebugViewで見れる)とファイルの両方に出力する。
+- Windows 10で起きたDirect3D 8の破壊的変更の緩和が主な目的なので、Direct3D 8のAPIとしてはできるだけ互換性を保つ。
+- 設定ファイルでの設定は、原則としてデフォルト設定をautoにして、autoでうまくいかない場合はユーザーに手動で他の設定をしてもらう方針。
 
 # TODO
 

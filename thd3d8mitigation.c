@@ -70,10 +70,14 @@ BOOL NeedPresentMitigation(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
 }
 
+/*
+ * Windows 10以降、IDirect3DDevice8::PresentはD3DPRESENT_PARAMETERS.FullScreen_PresentationIntervalに適切な値を設定しても
+ * 待機しなくなった。これにより紅魔郷のゲームスピードが高速化してしまうようになった。そのため、必要であれば独自の方法で
+ * 待機する。
+ */
 HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* pSourceRect, CONST RECT* pDestRect,
 	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
-	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	/* load from critical section */
@@ -102,7 +106,6 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
 {
 	ULONG ret;
-	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
@@ -133,7 +136,6 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
 	HRESULT ret;
-	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3DDevice8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
@@ -245,7 +247,6 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 	IDirect3DDevice8** ppReturnedDeviceInterface)
 {
 	HRESULT ret;
-	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3D8ExtraData* me_exdata;
 	DWORD orig_protect;
 	IDirect3DDevice8* d3ddev8;
@@ -324,7 +325,6 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 ULONG __stdcall cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
 {
 	ULONG ret;
-	/* me_exdataはmeに1対1で紐づく拡張プロパティと考えられるので、meのメソッド内ではデータ競合や競合状態について考えなくてよい。 */
 	struct IDirect3D8ExtraData* me_exdata;
 
 	if ((me_exdata = IDirect3D8ExtraDataTableGet(g_D3D8ExDataTable, me)) == NULL)
