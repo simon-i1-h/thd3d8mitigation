@@ -122,7 +122,7 @@ void VLogWithErrorCode(DWORD err, const char* fmt, va_list ap)
 	now = timeGetTime();
 	timeEndPeriod(1);
 
-	if (myasprintf(&msg, "%s System time [%10lu]: Thread [%10lu]: %s: error code: 0x%lx (%s)\r\n", LOG_PREFIX, now,
+	if (myasprintf(&msg, "%s[System time: %010lu][Thread: %010lu]: %s: error code: 0x%lx (%s)\r\n", LOG_PREFIX, now,
 			GetCurrentThreadId(), origmsg, err, errmsg) < 0)
 	{
 		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": warning: myasprintf failed.\r\n");
