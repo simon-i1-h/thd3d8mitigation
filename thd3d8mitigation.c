@@ -160,7 +160,7 @@ HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARA
 	return ret;
 }
 
-BOOL MeasureNormalFrameRate(double* ret_frame_second, IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
+BOOL MeasureNormalFrameSecond(double* ret_frame_second, IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
 {
 	double absolute_deviation_threshold = 3.0;
 
@@ -216,7 +216,7 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 
 	Log("%s: Detecting proper configure...", __FUNCTION__);
 
-	if (!MeasureNormalFrameRate(&frame_second, me, me_exdata))
+	if (!MeasureNormalFrameSecond(&frame_second, me, me_exdata))
 		return FALSE;
 
 	if (frame_second > frame_second_threshold)
