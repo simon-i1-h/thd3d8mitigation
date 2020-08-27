@@ -50,7 +50,7 @@ struct IDirect3DDevice8ExtraData {
 	IDirect3DDevice8Release_t VanillaRelease;
 	IDirect3DDevice8Reset_t VanillaReset;
 	D3DPRESENT_PARAMETERS pp;
-	enum ConfigWaitFor ConfigWaitFor;
+	enum ConfigWaitFor ConfigWaitFor; /* != CONFIG_WAITFOR_AUTO */
 };
 
 extern CRITICAL_SECTION g_CS;
