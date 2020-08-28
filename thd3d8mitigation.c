@@ -59,15 +59,6 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	return ret;
 }
 
-BOOL NeedPresentMitigation(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
-{
-	return !me_exdata->pp.Windowed && (me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
-										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
-										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
-										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
-										  me_exdata->pp.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
-}
-
 /*
  * Windows 10以降、IDirect3DDevice8::PresentはD3DPRESENT_PARAMETERS.FullScreen_PresentationIntervalに適切な値を設定しても
  * 待機しなくなった。これにより紅魔郷のゲームスピードが高速化してしまうようになった。そのため、必要であれば独自の方法で
@@ -89,9 +80,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 		return E_FAIL;
 	}
 
-	if (!NeedPresentMitigation(me, me_exdata))
-		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
+	if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride,
 			pDirtyRegion);
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_NORMAL)
@@ -127,33 +116,6 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 
 	EnterCriticalSection(&g_CS);
 	ret = cs_ModIDirect3DDevice8ReleaseImpl(me);
-	LeaveCriticalSection(&g_CS);
-	return ret;
-}
-
-HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
-{
-	HRESULT ret;
-	struct IDirect3DDevice8ExtraData* me_exdata;
-
-	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
-	{
-		Log("%s: bug, error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
-		return E_FAIL;
-	}
-
-	if (SUCCEEDED(ret = me_exdata->VanillaReset(me, pPresentationParameters)))
-		me_exdata->pp = *pPresentationParameters;
-
-	return ret;
-}
-
-HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
-{
-	HRESULT ret;
-
-	EnterCriticalSection(&g_CS);
-	ret = cs_ModIDirect3DDevice8ResetImpl(me, pPresentationParameters);
 	LeaveCriticalSection(&g_CS);
 	return ret;
 }
@@ -241,6 +203,60 @@ BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* 
 	return ret;
 }
 
+BOOL NeedPresentMitigation(D3DPRESENT_PARAMETERS* pp)
+{
+	return !pp->Windowed && (pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
+										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
+										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
+										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
+										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
+}
+
+HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
+{
+	HRESULT ret;
+	struct IDirect3DDevice8ExtraData* me_exdata;
+
+	if ((me_exdata = IDirect3DDevice8ExtraDataTableGet(g_D3DDev8ExDataTable, me)) == NULL)
+	{
+		Log("%s: bug, error: IDirect3DDevice8ExtraDataTableGet failed.", __FUNCTION__);
+		return E_FAIL;
+	}
+
+	if (SUCCEEDED(ret = me_exdata->VanillaReset(me, pPresentationParameters)))
+	{
+		me_exdata->pp = *pPresentationParameters;
+
+		if (NeedPresentMitigation(&me_exdata->pp))
+		{
+			if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
+			{
+				if (!DetectProperConfig(me, me_exdata, &me_exdata->ConfigWaitFor))
+				{
+					Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
+					return E_FAIL;
+				}
+			}
+			else
+				me_exdata->ConfigWaitFor = g_ConfigFileWaitFor;
+		}
+		else
+			me_exdata->ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
+	}
+
+	return ret;
+}
+
+HRESULT __stdcall ModIDirect3DDevice8Reset(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
+{
+	HRESULT ret;
+
+	EnterCriticalSection(&g_CS);
+	ret = cs_ModIDirect3DDevice8ResetImpl(me, pPresentationParameters);
+	LeaveCriticalSection(&g_CS);
+	return ret;
+}
+
 HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow,
 	DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters,
 	IDirect3DDevice8** ppReturnedDeviceInterface)
@@ -280,16 +296,21 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		.VanillaRelease = vtbl->Release,
 		.VanillaReset = vtbl->Reset,
 		.pp = *pPresentationParameters };
-	if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO && NeedPresentMitigation(d3ddev8, &d3ddev8_exdata))
+	if (NeedPresentMitigation(&d3ddev8_exdata.pp))
 	{
-		if (!DetectProperConfig(d3ddev8, &d3ddev8_exdata, &d3ddev8_exdata.ConfigWaitFor))
+		if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
 		{
-			Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
-			return E_FAIL;
+			if (!DetectProperConfig(d3ddev8, &d3ddev8_exdata, &d3ddev8_exdata.ConfigWaitFor))
+			{
+				Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
+				return E_FAIL;
+			}
 		}
+		else
+			d3ddev8_exdata.ConfigWaitFor = g_ConfigFileWaitFor;
 	}
 	else
-		d3ddev8_exdata.ConfigWaitFor = g_ConfigFileWaitFor;
+		d3ddev8_exdata.ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
 
 	if (!IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata))
 	{
