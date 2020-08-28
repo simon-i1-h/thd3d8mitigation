@@ -554,7 +554,7 @@ BOOL cs_LogInit(void)
 	free(logpath);
 	if (g_LogFile == INVALID_HANDLE_VALUE)
 	{
-		LogWithErrorCode(GetLastError(), "%s: error: CreateFileA failed.", __FUNCTION__);
+		LogWithErrorCode(err, "%s: error: CreateFileA failed.", __FUNCTION__);
 		return FALSE;
 	}
 
