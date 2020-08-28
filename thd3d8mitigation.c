@@ -91,7 +91,9 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 		return E_FAIL;
 	}
 
-	if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
+	if (!NeedPresentMitigation(me, me_exdata))
+		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride,
 			pDirtyRegion);
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_NORMAL)
