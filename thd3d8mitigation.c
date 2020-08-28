@@ -164,10 +164,8 @@ BOOL MeasureNormalFrameSecond(double* ret_frame_second, IDirect3DDevice8* me, st
 {
 	double absolute_deviation_threshold = 3.0;
 
-	DWORD starttime;
-	DWORD endtime;
+	DWORD starttime, endtime, sum;
 	DWORD frame_second_list[10];
-	DWORD sum;
 	double average, absolute_deviation, absolute_deviation_max;
 	int i, j;
 
