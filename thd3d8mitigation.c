@@ -120,7 +120,7 @@ ULONG __stdcall ModIDirect3DDevice8Release(IDirect3DDevice8* me)
 	return ret;
 }
 
-BOOL MeasureNormalFrameSecond(double* ret_frame_second, IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
+BOOL tm_MeasureNormalFrameSecond(double* ret_frame_second, IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
 {
 	double absolute_deviation_threshold = 3.0;
 
@@ -151,6 +151,7 @@ BOOL MeasureNormalFrameSecond(double* ret_frame_second, IDirect3DDevice8* me, st
 			if (absolute_deviation_max < absolute_deviation)
 				absolute_deviation_max = absolute_deviation;
 		}
+		/* 入力が安定したら測定を終了する。 */
 		if (absolute_deviation_max < absolute_deviation_threshold)
 			break;
 
@@ -174,7 +175,7 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 
 	Log("%s: Detecting proper configure...", __FUNCTION__);
 
-	if (!MeasureNormalFrameSecond(&frame_second, me, me_exdata))
+	if (!tm_MeasureNormalFrameSecond(&frame_second, me, me_exdata))
 	{
 		Log("%s: MeasureNormalFrameSecond failed.", __FUNCTION__);
 		return FALSE;
