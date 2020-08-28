@@ -207,10 +207,10 @@ BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* 
 BOOL NeedPresentMitigation(D3DPRESENT_PARAMETERS* pp)
 {
 	return !pp->Windowed && (pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
-										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
-										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
-										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
-										  pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
 }
 
 HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
