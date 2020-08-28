@@ -12,8 +12,6 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-/* XXX TODO review */
-
 enum InitStatus {
 	INITSTATUS_UNINITED,
 	INITSTATUS_SUCCEEDED,
