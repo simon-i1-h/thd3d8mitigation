@@ -38,7 +38,7 @@ Visual Studioを起動してソリューションファイルを開きます。�
 
 thd3d8mitigationをインストールした状態でゲームを起動すると、設定ファイルが無い場合は設定ファイルが生成されます。該当ゲームの設定ファイルと同じフォルダーにthd3d8mitigationcfg.iniという設定ファイルがあるはずです。メモ帳などで設定を確認および変更できます。
 
-(正確には、実行ファイルと同じフォルダーに設定ファイルの作成を試みます。そのため、通常はゲームの設定ファイル等を含めそのフォルダーに作成されるのですが、C:\\Program Files (x86)\\配下やC:\\Program Files\\配下などにインストールされている場合、UACの仮想化という機能によりVirtualStoreフォルダー(大抵はC:\\Users\\「ユーザー名」\\AppData\\Local\\VirtualStore\\)配下に作成されます。)
+(正確には、実行ファイルと同じフォルダーに設定ファイルの作成を試みます。そのため、通常はゲームの設定ファイル等を含めそのフォルダーに作成されるのですが、Windows Vista以降はC:\\Program Files (x86)\\配下やC:\\Program Files\\配下などにインストールされている場合、UACの仮想化という機能によりVirtualStoreフォルダー(大抵はC:\\Users\\「ユーザー名」\\AppData\\Local\\VirtualStore\\)配下に作成されます。)
 
 ### presentationセクション
 
@@ -48,9 +48,9 @@ thd3d8mitigationをインストールした状態でゲームを起動すると�
 
 - auto: とりあえず動けばいいという場合に推奨されます。環境に合わせて最適な設定を自動で設定します。この設定を設定すると起動時間が少し長くなります。
 - vsync: Windows 10でプレイする際に推奨されます。通常の処理に加え、独自の方法で垂直同期信号の待機を試みます。
-- normal: Windows 10以外の環境(10より前の版のWindows(7など)や、WineおよびProton等の互換レイヤーなど)でプレイする際に推奨されます。特に何もせず通常通りの処理のみを行います。
+- normal: Windows 10以外の環境(Windows 10より前のWindowsや、WineあるいはProton等の互換レイヤーなど)でプレイする際に推奨されます。特に何もせず通常通りの処理のみを行います。
 
-垂直同期信号が60Hzより高い環境などでは、併せて紅魔郷の「強制的に６０フレームにする」設定を有効にすると適切な動作をするかもしれません。
+垂直同期信号が60Hzより高い環境では、最初に東方紅魔郷の「強制的に６０フレームにする」設定を有効にしてください。
 
 ## バージョンの確認
 
@@ -58,6 +58,12 @@ thd3d8mitigationをインストールした状態でゲームを起動すると�
 
 ## 動作確認
 
-- Windows 10 (Build 20197) 東方紅魔郷 v1.02h Easy、Normal 霊夢A
+- Windows 10 (Build 20197) 東方紅魔郷 v1.02h Easy、Normal 霊夢A: 動作する
+- Windows 10 Version 2004 東方紅魔郷 v1.02h Normal 霊夢A: XXX TODO
+- Windows 7 Service Pack 1 東方紅魔郷 v1.02f Normal 霊夢A: 動作する
+- Windows XP Service Pack 3 東方紅魔郷 v1.02f Normal 霊夢A: XXX TODO
+- Ubuntu 20.04 Wine 5.0 東方紅魔郷 v1.02f Normal 霊夢A: 動作する
+  - winecfgでd3d8.dllについて内蔵版よりネイティブ版を優先する設定にすることでthd3d8mitigationを適用することが可能。
+  - 設定の自動検出がうまく働かないため、手動での設定をおすすめします。
 
-なお、作者のシューティング力が不足しているため、Hard、Lunatic、Extraでの動作確認は取れていません。
+作者のシューティング力が不足しているため、Hard、Lunatic、Extraでの動作確認は取れていません。
