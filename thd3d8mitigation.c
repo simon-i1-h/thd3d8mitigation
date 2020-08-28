@@ -654,10 +654,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 	{
 	case DLL_PROCESS_ATTACH:
 		/* https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#general-best-practices */
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Version: " PROGRAM_VERSION "\n");
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Version: " PROGRAM_VERSION "\r\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: begin\r\n");
 		InitializeCriticalSection(&g_CS);
-		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\n");
+		OutputDebugStringA(LOG_PREFIX __FUNCTION__ ": Attaching to the process: succeeded\r\n");
 		break;
 	case DLL_PROCESS_DETACH:
 		/* https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices#best-practices-for-synchronization */
