@@ -393,9 +393,9 @@ IDirect3D8* cs_ModDirect3DCreate8Impl(UINT SDKVersion)
 
 int AllocateDataDirPath(char** strp)
 {
-	char exepath[MAX_PATH + 1];
-	char exedrivepath[_MAX_DRIVE + 1];
-	char exedirpath[_MAX_DIR + 1];
+	char exepath[MAX_PATH];
+	char exedrivepath[_MAX_DRIVE];
+	char exedirpath[_MAX_DIR];
 	DWORD len;
 
 	if ((len = GetModuleFileNameA(NULL, exepath, sizeof(exepath))) == 0)
@@ -492,7 +492,7 @@ cleanup:
 
 BOOL InitD3D8Handle(HMODULE* ret)
 {
-	char sysdirpath[MAX_PATH + 1];
+	char sysdirpath[MAX_PATH];
 	char* sysdllpath;
 	unsigned int len;
 	DWORD err;
