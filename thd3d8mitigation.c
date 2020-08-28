@@ -531,7 +531,7 @@ BOOL InitVanillaDirect3DCreate8(HMODULE D3D8Handle, Direct3DCreate8_t* ret)
 {
 	if ((*ret = (Direct3DCreate8_t)GetProcAddress(D3D8Handle, "Direct3DCreate8")) == NULL)
 	{
-		LogWithErrorCode(GetLastError(), "%s: error: LoadFuncFromD3D8 failed.", __FUNCTION__);
+		LogWithErrorCode(GetLastError(), "%s: error: GetProcAddress failed.", __FUNCTION__);
 		return FALSE;
 	}
 
