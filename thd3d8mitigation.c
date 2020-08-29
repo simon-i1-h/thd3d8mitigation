@@ -32,6 +32,15 @@ static Direct3DCreate8_t g_VanillaDirect3DCreate8;
 static struct IDirect3D8ExtraDataTable* g_D3D8ExDataTable;
 static struct IDirect3DDevice8ExtraDataTable* g_D3DDev8ExDataTable;
 
+BOOL NeedPresentMitigation(D3DPRESENT_PARAMETERS* pp)
+{
+	return !pp->Windowed && (pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
+								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
+}
+
 HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata,
 	CONST RECT* pSourceRect, CONST RECT* pDestRect,
 	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
@@ -85,7 +94,9 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 		return E_FAIL;
 	}
 
-	if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
+	if (!NeedPresentMitigation(&me_exdata->pp))
+		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
 		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride,
 			pDirtyRegion);
 	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_NORMAL)
@@ -209,31 +220,17 @@ BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* 
 	return ret;
 }
 
-BOOL NeedPresentMitigation(D3DPRESENT_PARAMETERS* pp)
-{
-	return !pp->Windowed && (pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_DEFAULT ||
-								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_ONE ||
-								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_TWO ||
-								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_THREE ||
-								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
-}
-
 BOOL InitIDirect3DDevice8ExtraDataConfigFor(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
 {
 	if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
 	{
 		Log("%s: In config file, wait_for is auto. Set proper config...", __FUNCTION__);
-		if (NeedPresentMitigation(&me_exdata->pp))
+		if (!DetectProperConfig(me, me_exdata, &me_exdata->ConfigWaitFor))
 		{
-			if (!DetectProperConfig(me, me_exdata, &me_exdata->ConfigWaitFor))
-			{
-				Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
-				return FALSE;
-			}
+			Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
+			return FALSE;
 		}
-		else
-			me_exdata->ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
-		Log("%s: wait_for config: %s", __FUNCTION__, ConfigWaitForNameTable[me_exdata->ConfigWaitFor]);
+		Log("%s: set config: %s", __FUNCTION__, ConfigWaitForNameTable[me_exdata->ConfigWaitFor]);
 	}
 	else
 		me_exdata->ConfigWaitFor = g_ConfigFileWaitFor;
