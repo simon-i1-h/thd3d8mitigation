@@ -178,7 +178,7 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 	double frame_second = 0.0;
 	double frame_second_threshold = 15.0; /* 66.6666... FPS */
 
-	Log("%s: Detecting proper configure...", __FUNCTION__);
+	Log("%s: Detecting proper config...", __FUNCTION__);
 
 	if (!tm_MeasureNormalFrameSecond(&frame_second, me, me_exdata))
 	{
@@ -222,6 +222,7 @@ BOOL InitIDirect3DDevice8ExtraDataConfigFor(IDirect3DDevice8* me, struct IDirect
 {
 	if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
 	{
+		Log("%s: In config file, wait_for is auto. Set proper config...", __FUNCTION__);
 		if (NeedPresentMitigation(&me_exdata->pp))
 		{
 			if (!DetectProperConfig(me, me_exdata, &me_exdata->ConfigWaitFor))
