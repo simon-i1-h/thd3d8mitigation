@@ -273,7 +273,7 @@ HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMET
 		me_exdata->pp = *pPresentationParameters;
 		if (!InitIDirect3DDevice8ExtraDataModPresent(me, me_exdata))
 		{
-			Log("%s: error: InitIDirect3DDevice8ExtraDataConfigFor failed.", __FUNCTION__);
+			Log("%s: error: InitIDirect3DDevice8ExtraDataModPresent failed.", __FUNCTION__);
 			return E_FAIL;
 		}
 	}
@@ -332,7 +332,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		.pp = *pPresentationParameters };
 	if (!InitIDirect3DDevice8ExtraDataModPresent(d3ddev8, &d3ddev8_exdata))
 	{
-		Log("%s: error: InitIDirect3DDevice8ExtraDataConfigFor failed.", __FUNCTION__);
+		Log("%s: error: InitIDirect3DDevice8ExtraDataModPresent failed.", __FUNCTION__);
 		return E_FAIL;
 	}
 
