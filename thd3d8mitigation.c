@@ -242,8 +242,10 @@ BOOL InitIDirect3DDevice8ExtraDataModPresent(IDirect3DDevice8* me, struct IDirec
 		{
 		case CONFIG_WAITFOR_NORMAL:
 			me_exdata->ModPresent = ModIDirect3DDevice8PresentVanilla;
+			break;
 		case CONFIG_WAITFOR_VSYNC:
 			me_exdata->ModPresent = ModIDirect3DDevice8PresentWithGetRasterStatus;
+			break;
 		default:
 			Log("%s: bug, error: unreachable.", __FUNCTION__);
 			return FALSE;
