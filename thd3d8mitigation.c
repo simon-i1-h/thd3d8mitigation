@@ -73,6 +73,12 @@ HRESULT ModIDirect3DDevice8PresentWithGetRasterStatus(IDirect3DDevice8* me, stru
 	return ret;
 }
 
+HRESULT ModIDirect3DDevice8PresentVanilla(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata,
+	CONST RECT* pSourceRect, CONST RECT* pDestRect,
+	HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
+{
+	return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+}
 /*
  * Windows 10以降、IDirect3DDevice8::PresentはD3DPRESENT_PARAMETERS.FullScreen_PresentationIntervalに適切な値を設定しても
  * 待機しなくなった。これにより紅魔郷のゲームスピードが高速化してしまうようになった。そのため、必要であれば独自の方法で
@@ -94,16 +100,7 @@ HRESULT __stdcall ModIDirect3DDevice8Present(IDirect3DDevice8* me, CONST RECT* p
 		return E_FAIL;
 	}
 
-	if (!NeedPresentMitigation(&me_exdata->pp))
-		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_VSYNC)
-		return ModIDirect3DDevice8PresentWithGetRasterStatus(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride,
-			pDirtyRegion);
-	else if (me_exdata->ConfigWaitFor == CONFIG_WAITFOR_NORMAL)
-		return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
-
-	Log("%s: bug, error: unreachable.", __FUNCTION__);
-	return E_FAIL;
+	return me_exdata->ModPresent(me, me_exdata, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
 
 ULONG cs_ModIDirect3DDevice8ReleaseImpl(IDirect3DDevice8* me)
@@ -220,20 +217,39 @@ BOOL DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* 
 	return ret;
 }
 
-BOOL InitIDirect3DDevice8ExtraDataConfigFor(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
+BOOL InitIDirect3DDevice8ExtraDataModPresent(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
 {
-	if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
+	enum ConfigWaitFor wait_for;
+
+	/* load from critical section */
+	EnterCriticalSection(&g_CS);
+	wait_for = g_ConfigFileWaitFor;
+	LeaveCriticalSection(&g_CS);
+
+	if (NeedPresentMitigation(&me_exdata->pp))
 	{
-		Log("%s: In config file, wait_for is auto. Set proper config...", __FUNCTION__);
-		if (!DetectProperConfig(me, me_exdata, &me_exdata->ConfigWaitFor))
+		if (wait_for == CONFIG_WAITFOR_AUTO)
 		{
-			Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
+			if (!DetectProperConfig(me, me_exdata, &wait_for))
+			{
+				Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
+				return FALSE;
+			}
+		}
+
+		switch (wait_for)
+		{
+		case CONFIG_WAITFOR_NORMAL:
+			me_exdata->ModPresent = ModIDirect3DDevice8PresentVanilla;
+		case CONFIG_WAITFOR_VSYNC:
+			me_exdata->ModPresent = ModIDirect3DDevice8PresentWithGetRasterStatus;
+		default:
+			Log("%s: bug, error: unreachable.", __FUNCTION__);
 			return FALSE;
 		}
-		Log("%s: set config: %s", __FUNCTION__, ConfigWaitForNameTable[me_exdata->ConfigWaitFor]);
 	}
 	else
-		me_exdata->ConfigWaitFor = g_ConfigFileWaitFor;
+		me_exdata->ModPresent = ModIDirect3DDevice8PresentVanilla;
 
 	return TRUE;
 }
@@ -252,7 +268,7 @@ HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMET
 	if (SUCCEEDED(ret = me_exdata->VanillaReset(me, pPresentationParameters)))
 	{
 		me_exdata->pp = *pPresentationParameters;
-		if (!InitIDirect3DDevice8ExtraDataConfigFor(me, me_exdata))
+		if (!InitIDirect3DDevice8ExtraDataModPresent(me, me_exdata))
 		{
 			Log("%s: error: InitIDirect3DDevice8ExtraDataConfigFor failed.", __FUNCTION__);
 			return E_FAIL;
@@ -311,7 +327,7 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		.VanillaRelease = vtbl->Release,
 		.VanillaReset = vtbl->Reset,
 		.pp = *pPresentationParameters };
-	if (!InitIDirect3DDevice8ExtraDataConfigFor(d3ddev8, &d3ddev8_exdata))
+	if (!InitIDirect3DDevice8ExtraDataModPresent(d3ddev8, &d3ddev8_exdata))
 	{
 		Log("%s: error: InitIDirect3DDevice8ExtraDataConfigFor failed.", __FUNCTION__);
 		return E_FAIL;
