@@ -47,7 +47,7 @@ thd3d8mitigationのソースコードはBOM付きUTF-8で書かれているが�
 # 命名規則
 
 - cs_\*: クリティカルセクション。呼び出し側はクリティカルセクションであるかEnterCriticalSectionおよびLeaveCriticalSectionで排他制御を行う必要がある。
-- g_\*: グローバル変数。CRITICAL_SECTION型を除いて、呼び出し側はクリティカルセクションであるかEnterCriticalSectionおよびLeaveCriticalSectionで排他制御を行う必要がある。
+- g_\*: 代入可能なグローバル変数。CRITICAL_SECTION型を除いて、呼び出し側はクリティカルセクションであるかEnterCriticalSectionおよびLeaveCriticalSectionで排他制御を行う必要がある。
 - \*_t: 主にtypedefした型識別子。
 - Mod\*: この接頭辞に続く名前の処理に割り込んで追加の処理を行う関数。
 - V\*: va_listを引数に取る関数。va_listではなく可変長引数を取る版の関数から呼び出されることが多い。

@@ -20,6 +20,11 @@ enum InitStatus {
 
 CRITICAL_SECTION g_CS;
 
+const char* const ConfigWaitForNameTable[3] = {
+	[CONFIG_WAITFOR_VSYNC] = "vsync",
+	[CONFIG_WAITFOR_NORMAL] = "normal",
+	[CONFIG_WAITFOR_AUTO] = "auto"
+};
 static enum ConfigWaitFor g_ConfigFileWaitFor;
 
 static HMODULE g_D3D8Handle;
@@ -184,12 +189,12 @@ BOOL tm_DetectProperConfig(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraDat
 	if (frame_second > frame_second_threshold)
 	{
 		*config_wait_for = CONFIG_WAITFOR_NORMAL;
-		Log("%s: wait_for config: normal", __FUNCTION__);
+		Log("%s: Detected proper config: normal", __FUNCTION__);
 		return TRUE;
 	}
 
 	*config_wait_for = CONFIG_WAITFOR_VSYNC;
-	Log("%s: wait_for config: vsync", __FUNCTION__);
+	Log("%s: Detected proper config: vsync", __FUNCTION__);
 	return TRUE;
 }
 
@@ -213,6 +218,28 @@ BOOL NeedPresentMitigation(D3DPRESENT_PARAMETERS* pp)
 								pp->FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_FOUR);
 }
 
+BOOL InitIDirect3DDevice8ExtraDataConfigFor(IDirect3DDevice8* me, struct IDirect3DDevice8ExtraData* me_exdata)
+{
+	if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
+	{
+		if (NeedPresentMitigation(&me_exdata->pp))
+		{
+			if (!DetectProperConfig(me, me_exdata, &me_exdata->ConfigWaitFor))
+			{
+				Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
+				return FALSE;
+			}
+		}
+		else
+			me_exdata->ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
+		Log("%s: wait_for config: %s", __FUNCTION__, ConfigWaitForNameTable[me_exdata->ConfigWaitFor]);
+	}
+	else
+		me_exdata->ConfigWaitFor = g_ConfigFileWaitFor;
+
+	return TRUE;
+}
+
 HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
 	HRESULT ret;
@@ -227,22 +254,11 @@ HRESULT cs_ModIDirect3DDevice8ResetImpl(IDirect3DDevice8* me, D3DPRESENT_PARAMET
 	if (SUCCEEDED(ret = me_exdata->VanillaReset(me, pPresentationParameters)))
 	{
 		me_exdata->pp = *pPresentationParameters;
-
-		if (NeedPresentMitigation(&me_exdata->pp))
+		if (!InitIDirect3DDevice8ExtraDataConfigFor(me, me_exdata))
 		{
-			if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
-			{
-				if (!DetectProperConfig(me, me_exdata, &me_exdata->ConfigWaitFor))
-				{
-					Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
-					return E_FAIL;
-				}
-			}
-			else
-				me_exdata->ConfigWaitFor = g_ConfigFileWaitFor;
+			Log("%s: error: InitIDirect3DDevice8ExtraDataConfigFor failed.", __FUNCTION__);
+			return E_FAIL;
 		}
-		else
-			me_exdata->ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
 	}
 
 	return ret;
@@ -297,21 +313,11 @@ HRESULT cs_ModIDirect3D8CreateDeviceImpl(IDirect3D8* me, UINT Adapter, D3DDEVTYP
 		.VanillaRelease = vtbl->Release,
 		.VanillaReset = vtbl->Reset,
 		.pp = *pPresentationParameters };
-	if (NeedPresentMitigation(&d3ddev8_exdata.pp))
+	if (!InitIDirect3DDevice8ExtraDataConfigFor(d3ddev8, &d3ddev8_exdata))
 	{
-		if (g_ConfigFileWaitFor == CONFIG_WAITFOR_AUTO)
-		{
-			if (!DetectProperConfig(d3ddev8, &d3ddev8_exdata, &d3ddev8_exdata.ConfigWaitFor))
-			{
-				Log("%s: error: DetectProperConfig failed.", __FUNCTION__);
-				return E_FAIL;
-			}
-		}
-		else
-			d3ddev8_exdata.ConfigWaitFor = g_ConfigFileWaitFor;
+		Log("%s: error: InitIDirect3DDevice8ExtraDataConfigFor failed.", __FUNCTION__);
+		return E_FAIL;
 	}
-	else
-		d3ddev8_exdata.ConfigWaitFor = CONFIG_WAITFOR_NORMAL;
 
 	if (!IDirect3DDevice8ExtraDataTableInsert(g_D3DDev8ExDataTable, d3ddev8, d3ddev8_exdata))
 	{
@@ -463,14 +469,11 @@ BOOL ExistsFile(char* path)
 
 BOOL cs_InitConfig(void)
 {
-	char* section_present = "presentation";
-	char* key_wait_for = "wait_for";
-	char* value_wait_for_vsync = "vsync";
-	char* value_wait_for_normal = "normal";
-	char* value_wait_for_auto = "auto";
+	const char* section_present = "presentation";
+	const char* key_wait_for = "wait_for";
 
 	enum ConfigWaitFor config_wait_for_default = CONFIG_WAITFOR_AUTO;
-	char* value_wait_for_default = value_wait_for_auto;
+	const char* value_wait_for_default = ConfigWaitForNameTable[CONFIG_WAITFOR_AUTO];
 
 	char* path = NULL;
 	char buf[32];
@@ -494,11 +497,11 @@ BOOL cs_InitConfig(void)
 	if (GetPrivateProfileStringA(section_present, key_wait_for, value_wait_for_default, buf, sizeof(buf), path) >=
 		sizeof(buf) - 1)
 		/* no op */;
-	else if (strcmp(buf, value_wait_for_vsync) == 0)
+	else if (strcmp(buf, ConfigWaitForNameTable[CONFIG_WAITFOR_VSYNC]) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_VSYNC;
-	else if (strcmp(buf, value_wait_for_normal) == 0)
+	else if (strcmp(buf, ConfigWaitForNameTable[CONFIG_WAITFOR_NORMAL]) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_NORMAL;
-	else if (strcmp(buf, value_wait_for_auto) == 0)
+	else if (strcmp(buf, ConfigWaitForNameTable[CONFIG_WAITFOR_AUTO]) == 0)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_AUTO;
 	else
 		/* no op */;

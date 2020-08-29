@@ -54,6 +54,7 @@ struct IDirect3DDevice8ExtraData {
 };
 
 extern CRITICAL_SECTION g_CS;
+extern const char* const ConfigWaitForNameTable[3];
 
 /* util.c */
 
