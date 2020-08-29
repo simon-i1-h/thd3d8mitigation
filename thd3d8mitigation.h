@@ -34,7 +34,8 @@ typedef ULONG(__stdcall* IDirect3DDevice8Release_t)(IDirect3DDevice8*);
 /* type of IDirect3DDevice8::Reset */
 typedef HRESULT(__stdcall* IDirect3DDevice8Reset_t)(IDirect3DDevice8*, D3DPRESENT_PARAMETERS*);
 
-typedef HRESULT (*ModIDirect3DDevice8Present_t)(IDirect3DDevice8*, struct IDirect3DDevice8ExtraData*, CONST RECT*, CONST RECT*, HWND, CONST RGNDATA*);
+typedef HRESULT (*ModIDirect3DDevice8Present_t)(IDirect3DDevice8*, struct IDirect3DDevice8ExtraData*,
+	CONST RECT*, CONST RECT*, HWND, CONST RGNDATA*);
 
 enum ConfigWaitFor {
 	CONFIG_WAITFOR_VSYNC,
