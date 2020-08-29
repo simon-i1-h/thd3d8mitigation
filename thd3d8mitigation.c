@@ -79,6 +79,7 @@ HRESULT ModIDirect3DDevice8PresentVanilla(IDirect3DDevice8* me, struct IDirect3D
 {
 	return me_exdata->VanillaPresent(me, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
+
 /*
  * Windows 10以降、IDirect3DDevice8::PresentはD3DPRESENT_PARAMETERS.FullScreen_PresentationIntervalに適切な値を設定しても
  * 待機しなくなった。これにより紅魔郷のゲームスピードが高速化してしまうようになった。そのため、必要であれば独自の方法で
