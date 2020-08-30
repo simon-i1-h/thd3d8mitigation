@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#define PROGRAM_VERSION "0.1"
+#define PROGRAM_VERSION "1.0"
 
 /* thd3d8mitigation.c */
 
