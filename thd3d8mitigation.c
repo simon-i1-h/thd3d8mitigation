@@ -522,7 +522,7 @@ BOOL cs_InitConfig(void)
 		g_ConfigFileWaitFor = CONFIG_WAITFOR_AUTO;
 	else
 		/* no op */;
-	Log("%s: config file %s: %s", __FUNCTION__, key_wait_for, buf);
+	Log("%s: config file %s: %s", __FUNCTION__, key_wait_for, ConfigWaitForNameTable[g_ConfigFileWaitFor]);
 
 	ret = TRUE;
 cleanup:
