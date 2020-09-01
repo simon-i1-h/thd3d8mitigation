@@ -1,0 +1,6 @@
+﻿#pragma once
+
+#define IDC_RADIO_WAIT_FOR_AUTO 1001
+#define IDC_RADIO_WAIT_FOR_VSYNC 1002
+#define IDC_RADIO_WAIT_FOR_NORMAL 1003
+#define IDC_STATIC -1
