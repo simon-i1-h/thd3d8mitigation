@@ -12,18 +12,6 @@ Direct3D 8のバグ緩和レイヤーです。Windows 10で行われたDirect3D 
 
 MIT License。詳細はLICENSE.txtを参照のこと。
 
-## ビルド方法
-
-必要なもの:
-
-- Windows 10
-- Visual Studio 2019 (CommunityエディションでOK)
-- DirectX SDK August 2007 (https://www.microsoft.com/en-us/download/details.aspx?id=13287)
-  - DirectX 8(Direct3D 8を含む)をサポートする最後のSDK
-  - SDKのインストールディレクトリはデフォルト(C:\\Program Files (x86)\\Microsoft DirectX SDK (August 2007))で問題ないはずです。詳しくはプロジェクトファイルをご覧ください。
-
-Visual Studioを起動してソリューションファイルを開きます。開いたら構成をDebugではなくReleaseにします。そして、\[ビルド\]→\[ソリューションのビルド\]でビルドします。ビルドの成果物はReleaseフォルダーに出力されます。
-
 ## インストール方法
 
 1. d3d8.dllとthd3d8mitigationcustom.exeをコピーして、ゲームの実行ファイルがあるフォルダーに貼り付けます。
