@@ -30,6 +30,8 @@ Visual Studioを起動してソリューションファイルを開きます。�
 2. ゲームを起動します。
 3. お楽しみください。
 
+環境によっては必要なプログラムが足りず起動に失敗することがあります。その場合はVisual Studio 2019 用 Microsoft Visual C++ 再頒布可能パッケージをインストールしてみてください。 https://support.microsoft.com/ja-jp/help/2977003/the-latest-supported-visual-c-downloads
+
 ## アンインストール方法
 
 1. インストール時にゲームの実行ファイルがあるフォルダーに貼り付けたd3d8.dllとthd3d8mitigationcustom.exeを削除します。
