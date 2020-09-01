@@ -82,6 +82,10 @@ thd3d8mitigationのソースコードはBOM付きUTF-8で書かれているが�
 
 改行コードはCRLFとする。
 
+# その他
+
+- Cランタイムは最近のMSVCのものを使う必要がある。C99互換のvsnprintf関数に依存しているため。 https://docs.microsoft.com/ja-jp/cpp/c-runtime-library/reference/vsnprintf-vsnprintf-vsnprintf-l-vsnwprintf-vsnwprintf-l?view=vs-2019
+
 # TODO
 
 - 回復不能なエラー時にutil.c::FatalなどはExitProcessではなくTerminateProcessなどを呼び出すべきかもしれない。
