@@ -1,6 +1,7 @@
 ﻿#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,17 +12,21 @@ int myvasprintf(char** strp, const char* fmt, va_list ap)
 {
 	va_list ap2;
 	int len;
+	_locale_t loc;
+
+	loc = _get_current_locale();
 
 	va_copy(ap2, ap);
-	len = vsnprintf(NULL, 0, fmt, ap2);
+	len = _vscprintf_l(fmt, loc, ap);
 	va_end(ap2);
+
 	if (len < 0)
 		return -1;
 
 	if ((*strp = malloc(len + 1)) == NULL)
 		return -1;
 
-	if ((len = vsnprintf(*strp, len + 1, fmt, ap)) < 0)
+	if ((len = _vsprintf_s_l(*strp, len + 1, fmt, loc, ap)) < 0)
 	{
 		free(*strp);
 		return -1;
