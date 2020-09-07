@@ -19,7 +19,6 @@ int myvasprintf(char** strp, const char* fmt, va_list ap)
 	va_copy(ap2, ap);
 	len = _vscprintf_l(fmt, loc, ap);
 	va_end(ap2);
-
 	if (len < 0)
 		return -1;
 
