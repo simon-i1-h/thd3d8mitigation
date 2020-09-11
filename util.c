@@ -12,13 +12,10 @@
 
 HANDLE g_LogFile = NULL;
 
-int myvasprintf(char** strp, const char* fmt, va_list ap)
+int myvasprintf_l(char** strp, const char* fmt, _locale_t loc, va_list ap)
 {
 	va_list ap2;
 	int len;
-	_locale_t loc;
-
-	loc = _get_current_locale();
 
 	va_copy(ap2, ap);
 	len = _vscprintf_l(fmt, loc, ap);
@@ -36,6 +33,18 @@ int myvasprintf(char** strp, const char* fmt, va_list ap)
 	}
 
 	return len;
+}
+
+int myvasprintf(char** strp, const char* fmt, va_list ap)
+{
+	_locale_t loc;
+	int ret;
+
+	loc = _get_current_locale();
+	ret = myvasprintf_l(strp, fmt, loc, ap);
+	_free_locale(loc);
+
+	return ret;
 }
 
 int myasprintf(char** strp, const char* fmt, ...)
