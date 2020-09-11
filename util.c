@@ -26,7 +26,7 @@ int myvasprintf_l(char** strp, const char* fmt, _locale_t loc, va_list ap)
 	if ((*strp = malloc(len + 1)) == NULL)
 		return -1;
 
-	if ((len = _vsprintf_s_l(*strp, len + 1, fmt, loc, ap)) < 0)
+	if ((len = _vsnprintf_s_l(*strp, len + 1, _TRUNCATE, fmt, loc, ap)) < 0)
 	{
 		free(*strp);
 		return -1;
