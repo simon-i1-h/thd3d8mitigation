@@ -5,4 +5,4 @@
 #define PROGRAM_VERSION "1.7dev"
 
 /* for resource script */
-#define RAW_PROGRAM_VERSION 1.7dev
+#define PROGRAM_TITLE "thd3d8mitigation v1.7dev"
