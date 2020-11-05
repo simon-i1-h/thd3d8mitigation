@@ -6,11 +6,11 @@
 #define CINTERFACE
 #include <d3d8.h>
 
+#include "thd3d8mitigationversion.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define PROGRAM_VERSION "1.7dev"
 
 /* thd3d8mitigation.c */
 
