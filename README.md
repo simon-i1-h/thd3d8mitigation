@@ -50,7 +50,7 @@ thd3d8mitigationcustom.exeで設定できます。設定は独自の設定ファ
 
 ## バージョンの確認
 
-ゲームの起動時に、該当ゲームの設定ファイルと同じフォルダーに生成されたthd3d8mitigationlog.txtに記録されます。
+thd3d8mitigationcustom.exeのウインドウタイトルに表示されます。また、ゲームの起動時に、該当ゲームの設定ファイルと同じフォルダーに生成されたthd3d8mitigationlog.txtに記録されます。
 
 ## 動作確認
 
