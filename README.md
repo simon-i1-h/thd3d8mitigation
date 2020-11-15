@@ -56,6 +56,7 @@ thd3d8mitigationcustom.exeで設定できます。設定は独自の設定ファ
 
 - Windows 10 Version 2004 東方紅魔郷 v1.02h Normal 霊夢A: 動作する
 - Windows 10 (Build 20197) 東方紅魔郷 v1.02h Easy、Normal 霊夢A、霊夢B: 動作する
+- Windows 10 (Build 20257) 東方紅魔郷 v1.02h Extra 霊夢B: 動作する
 - Windows 7 Service Pack 1 東方紅魔郷 v1.02f Normal 霊夢A: 動作する
 - Windows XP Service Pack 3 東方紅魔郷 v1.02f Normal 霊夢A: 動作する
 - Ubuntu 20.04 Wine 5.0 東方紅魔郷 v1.02f Normal 霊夢A: 動作する
