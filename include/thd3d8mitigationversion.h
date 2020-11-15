@@ -2,7 +2,7 @@
 
 #pragma once
 
-#define PROGRAM_VERSION "1.8"
+#define PROGRAM_VERSION "1.9dev"
 
 /* for resource script */
-#define PROGRAM_TITLE "thd3d8mitigation v1.8"
+#define PROGRAM_TITLE "thd3d8mitigation v1.9dev"
