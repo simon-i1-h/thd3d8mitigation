@@ -366,7 +366,7 @@ HRESULT __stdcall ModIDirect3D8CreateDevice(IDirect3D8* me, UINT Adapter, D3DDEV
 	return ret;
 }
 
-ULONG __stdcall cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
+ULONG cs_ModIDirect3D8ReleaseImpl(IDirect3D8* me)
 {
 	ULONG ret;
 	struct IDirect3D8ExtraData* me_exdata;
