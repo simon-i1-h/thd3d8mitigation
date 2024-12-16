@@ -54,8 +54,7 @@ thd3d8mitigationcustom.exeのウインドウタイトルに表示されます。
 
 ## 動作確認
 
-- Windows 11 Version 24H2 東方紅魔郷 v1.02h Lunatic 霊夢B: 動作する
-- Windows 11 Version 24H2 東方紅魔郷 v1.02h Hard 霊夢B: 動作する
+- Windows 11 Version 24H2 東方紅魔郷 v1.02h Hard、Lunatic 霊夢B: 動作する
 - Windows 11 Version 21H2 (Build 22000.194) 東方紅魔郷 v1.02h Normal、Extra 霊夢B: 動作する
 - Windows 10 Version 2004 東方紅魔郷 v1.02h Normal 霊夢A: 動作する
 - Windows 10 (Build 20197) 東方紅魔郷 v1.02h Easy、Normal 霊夢A、霊夢B: 動作する
